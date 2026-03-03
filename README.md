@@ -1,6 +1,6 @@
-#### Made with Laravel <img src="readme_logos/laravel_logo.png" alt="Laravel Logo" width="20" />, 
-on OpenBSD <img src="readme_logos/openbsd_logo.svg" alt="OpenBSD Logo" width="20" /> 
-with Doom Emacs <img src="readme_logos/doom_emacs_logo.png" alt="Doom Emacs Logo" width="20" />.
+#### Made with Laravel 12 <img src="readme_logos/laravel_logo.png" alt="Laravel Logo" width="50" />, 
+on OpenBSD <img src="readme_logos/openbsd_logo.svg" alt="OpenBSD Logo" width="50" /> 
+with Doom Emacs <img src="readme_logos/doom_emacs_logo.png" alt="Doom Emacs Logo" width="50" />.
 
 
 api v1 always has help endpoint.
