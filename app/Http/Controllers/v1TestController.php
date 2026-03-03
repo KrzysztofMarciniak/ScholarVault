@@ -1,19 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
-class v1TestController extends Controller
+class v1TestController extends v1Controller
 {
-    /**
-     * Display a test response.
-     */
+    public function help(): JsonResponse
+    {
+        return $this->helpResponse([
+            "Help: Hit this endpoint with GET, to check if it works.",
+        ]);
+    }
+
     public function index()
     {
         return response()->json([
-            'status' => 'success',
-            'message' => 'v1 API test endpoint works!',
+            "status" => "success",
+            "message" => "v1 API test endpoint works!",
         ]);
     }
 }

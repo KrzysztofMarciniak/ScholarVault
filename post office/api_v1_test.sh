@@ -1,7 +1,10 @@
 #!/bin/sh
 
-# Load configuration
 . ./config.sh
 
-# Example test request
+echo
+echo
+curl -X GET "$API_BASE_URL/test/help"
+echo
+echo
 curl -X GET "$API_BASE_URL/test"

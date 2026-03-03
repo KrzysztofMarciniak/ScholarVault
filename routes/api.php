@@ -1,16 +1,24 @@
 <?php
-use App\Http\Controllers\v1TestController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\ArticleController;
 
-// --- Versioned API prefix ---
-Route::prefix('v1')->group(function () {
-    Route::get('test', [v1TestController::class, 'index']);
-    // --- Protected routes ---
-    Route::middleware('auth:sanctum')->group(function () {
-//        Route::get('users', [UserController::class, 'index']); // list users
+declare(strict_types=1);
+
+use App\Http\Controllers\v1TestController;
+use App\Http\Controllers\v1TestMiddlewareSanitization;
+use Illuminate\Support\Facades\Route;
+// --- /api/v1/ ---
+Route::prefix("v1")->group(function (): void {
+    // --- /api/v1/test ---
+    Route::prefix("test")->group(function (): void {
+        Route::get("help", [v1TestController::class, "help"]);
+        Route::get("/", [v1TestController::class, "index"]);
+        // --- /api/v1/test/sanitization
+        Route::prefix("sanitization")->group(function (): void {
+            Route::get("help", [v1TestMiddlewareSanitization::class, "help"]);
+            Route::post("/", [v1TestMiddlewareSanitization::class, "index"]);
+        });
     });
 
+    // --- Protected routes ---
+    Route::middleware("auth:sanctum")->group(function (): void {
+    });
 });
