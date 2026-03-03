@@ -4,11 +4,36 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class v1LoginController extends Controller
 {
+    public function help(): JsonResponse
+    {
+        return response()->json([
+            "message" => "Login API usage instructions",
+            "endpoints" => [
+                "POST /api/v1/login" => [
+                    "description" => "Authenticate user with email and password, returns API token. Be mindful that we utlize trim sanitization on password, and we sanitize email to be lowercase.",
+                    "required_fields" => [
+                        "email" => "string, valid email",
+                        "password" => "string, required",
+                    ],
+                    "example_request" => [
+                        "email" => "user@example.com",
+                        "password" => "secret",
+                    ],
+                ],
+                "POST /api/v1/login/logout" => [
+                    "description" => "Revoke current API token, logs user out",
+                    "headers" => ["Authorization: Bearer <token>"],
+                ],
+            ],
+        ]);
+    }
+
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -27,7 +52,6 @@ class v1LoginController extends Controller
         $token = $user->createToken("api-token")->plainTextToken;
 
         return response()->json([
-            // 200
             "token" => $token,
             "user" => $user,
         ]);

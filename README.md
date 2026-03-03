@@ -5,7 +5,7 @@
   on <a href="https://www.openbsd.org/">OpenBSD</a>
   <img src="readme_logos/openbsd_logo.svg" alt="OpenBSD Logo" width="50" /> 
   with <a href="https://github.com/doomemacs/doomemacs">Doom Emacs</a>
-  <img src="readme_logos/doom_emacs_logo.png" alt="Doom Emacs Logo" width="50" />.
+  <img src="readme_logos/doom_emacs_logo.png" alt="Doom Emacs Logo" width="50" />
   </h1>
 </p>
 
