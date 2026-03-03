@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SanitizeWithSanitizer::class);
+    $middleware->alias([
+        'roles' => \App\Http\Middleware\RolesRequired::class,
+    ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
     })->create();

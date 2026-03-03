@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Role;
 use App\Http\Controllers\v1LoginController;
 use App\Http\Controllers\v1RegisterController;
 use App\Http\Controllers\v1TestController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\v1TestMiddlewareSanitization;
 use App\Http\Middleware\BlockIfAuthenticated;
 use Illuminate\Support\Facades\Route;
 
+// ->middleware('roles:' . Role::ADMINISTRATOR)
 // --- /api/v1/ ---
 Route::prefix("v1")->group(function (): void {
     // --- /api/v1/register ---
