@@ -29,6 +29,7 @@ class User extends Authenticatable
         "affiliation", // nullable
         "orcid", // nullable
         "bio", // nullable
+        "deactivated",
     ];
 
     /*

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\RolesRequired;
 use App\Http\Middleware\SanitizeWithSanitizer;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -16,9 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SanitizeWithSanitizer::class);
-    $middleware->alias([
-        'roles' => \App\Http\Middleware\RolesRequired::class,
-    ]);
+
+        $middleware->alias([
+            "roles" => RolesRequired::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
     })->create();

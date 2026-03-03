@@ -43,11 +43,11 @@ class v1RegisterController extends Controller
     public function register(Request $request): JsonResponse
     {
         $data = $request->validate([
-            "name" => ["sometimes", "string"],
+            "name" => ["sometimes", "string", "max:255"],
             "email" => ["required", "email", "unique:users,email"],
-            "password" => ["required", "string", "min:6"],
-            "affiliation" => ["sometimes", "string"],
-            "orcid" => ["sometimes", "string"],
+            "password" => ["required", "string", "min:8"],
+            "affiliation" => ["sometimes", "string", "max:255"],
+            "orcid" => ["sometimes", "string", "max:32"],
             "bio" => ["sometimes", "string"],
         ]);
 

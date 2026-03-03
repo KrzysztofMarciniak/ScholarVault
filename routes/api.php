@@ -1,16 +1,15 @@
 <?php
 
 declare(strict_types=1);
-
-use App\Models\Role;
 use App\Http\Controllers\v1LoginController;
 use App\Http\Controllers\v1RegisterController;
 use App\Http\Controllers\v1TestController;
 use App\Http\Controllers\v1TestMiddlewareSanitization;
+use App\Http\Controllers\v1UserController;
 use App\Http\Middleware\BlockIfAuthenticated;
+use App\Models\Role;
 use Illuminate\Support\Facades\Route;
 
-// ->middleware('roles:' . Role::ADMINISTRATOR)
 // --- /api/v1/ ---
 Route::prefix("v1")->group(function (): void {
     // --- /api/v1/register ---
@@ -25,7 +24,7 @@ Route::prefix("v1")->group(function (): void {
         Route::get("help", [v1LoginController::class, "help"]);
 
         // Login endpoint
-        Route::post("", [v1LoginController::class, "login"]);
+        Route::post("", [v1LoginController::class, "login"])->middleware([BlockIfAuthenticated::class]);
 
         // Logout endpoint (requires auth)
         Route::post("/logout", [v1LoginController::class, "logout"])
@@ -40,6 +39,42 @@ Route::prefix("v1")->group(function (): void {
         Route::prefix("sanitization")->group(function (): void {
             Route::get("help", [v1TestMiddlewareSanitization::class, "help"]);
             Route::post("/", [v1TestMiddlewareSanitization::class, "index"]);
+        });
+    });
+
+    // --- /api/v1/users ---
+    Route::prefix("users")->group(function (): void {
+        // Help endpoint
+        Route::get("help", [v1UserController::class, "help"]);
+
+        // Public list (active users only)
+        Route::get("/", [v1UserController::class, "index"]);
+
+        // Search endpoint
+        Route::get("/search", [v1UserController::class, "search"]);
+
+        // Protected routes (require authentication)
+        Route::middleware("auth:sanctum")->group(function (): void {
+            // Change own password
+            Route::patch("self/password", [v1UserController::class, "changePassword"]);
+
+            // Update own profile
+            Route::put("self", [v1UserController::class, "updateSelf"]);
+
+            // Delete own account
+            Route::delete("self", [v1UserController::class, "deleteSelf"]);
+        });
+
+        // Admin routes
+        Route::middleware(["auth:sanctum", "roles:" . Role::ADMINISTRATOR])->group(function (): void {
+            // Create user
+            Route::post("/", [v1UserController::class, "store"]);
+
+            // Update user
+            Route::patch("{id}", [v1UserController::class, "update"]);
+
+            // Deactivate user
+            Route::delete("{id}", [v1UserController::class, "destroy"]);
         });
     });
 
