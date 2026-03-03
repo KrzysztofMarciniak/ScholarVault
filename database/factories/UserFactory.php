@@ -30,7 +30,14 @@ class UserFactory extends Factory
             "email_verified_at" => now(),
             "password" => static::$password ??= Hash::make("password"),
             "remember_token" => Str::random(10),
-            "role_id" => fake()->randomElement([Role::AUTHOR, Role::REVIEWER, Role::ADMINISTRATOR]),
+            "role_id" => fake()->randomElement([
+                Role::AUTHOR,
+                Role::REVIEWER,
+                Role::ADMINISTRATOR,
+            ]),
+            "affiliation" => fake()->company(),
+            "orcid" => implode("", array_map(fn() => fake()->numberBetween(0, 9), range(1, 16))),
+            "bio" => fake()->paragraph(),
         ];
     }
 

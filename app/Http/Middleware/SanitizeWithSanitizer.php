@@ -28,8 +28,8 @@ class SanitizeWithSanitizer
         $sanitized = $sanitizer->sanitize();
 
         // Apply ORCID formatting
-        if (!empty($sanitized['orcid'])) {
-            $sanitized['orcid'] = $this->formatOrcid($sanitized['orcid']);
+        if (!empty($sanitized["orcid"])) {
+            $sanitized["orcid"] = $this->formatOrcid($sanitized["orcid"]);
         }
 
         $request->replace($sanitized);
@@ -40,19 +40,19 @@ class SanitizeWithSanitizer
     /**
      * Format ORCID as XXXX-XXXX-XXXX-XXXX
      */
-    private function formatOrcid(string $orcid): string
+    private function formatOrcid(?string $orcid): ?string
     {
-        // Remove all non-digit characters
-        $digits = preg_replace('/\D/', '', $orcid);
-
-        // Only format if exactly 16 digits
-        if (strlen($digits) !== 16) {
-            return $orcid; // leave as-is if invalid length
+        if (empty($orcid)) {
+            return null;
         }
 
-        return substr($digits, 0, 4) . '-' .
-               substr($digits, 4, 4) . '-' .
-               substr($digits, 8, 4) . '-' .
-               substr($digits, 12, 4);
+        if (strlen($orcid) !== 16) {
+            return $orcid;
+        }
+
+        return substr($orcid, 0, 4) . "-" .
+               substr($orcid, 4, 4) . "-" .
+               substr($orcid, 8, 4) . "-" .
+               substr($orcid, 12, 4);
     }
 }
