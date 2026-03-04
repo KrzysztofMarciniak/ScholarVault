@@ -12,11 +12,23 @@ class Article extends Model
     use HasFactory;
 
     protected $fillable = [
-        "title", "abstract", "filename", "file_type", "keywords", "status", "doi",
+        "title",
+        "abstract",
+        "filename",
+        "file_type",
+        "keywords",
+        "status_id",
+        "doi",
     ];
     protected $casts = [
         "keywords" => "array",
     ];
+
+    // Relationship to article status
+    public function status()
+    {
+        return $this->belongsTo(ArticleStatus::class, "status_id");
+    }
 
     // Multiple authors
     public function authors()
@@ -32,8 +44,8 @@ class Article extends Model
         return $this->belongsToMany(
             self::class,
             "article_citation",
-            "article_id",        // this article
-            "cited_article_id",   // the referenced article
+            "article_id",       // this article
+            "cited_article_id", // the referenced article
         )->withTimestamps();
     }
 
@@ -44,7 +56,7 @@ class Article extends Model
             self::class,
             "article_citation",
             "cited_article_id", // this article
-            "article_id",        // citing article
+            "article_id",       // citing article
         )->withTimestamps();
     }
 }

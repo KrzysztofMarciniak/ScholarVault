@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\ArticleStatus;
 use App\Events\ArticleSubmitted;
 use App\Models\Article;
 use Illuminate\Http\JsonResponse;
@@ -33,48 +34,65 @@ class v1ArticleController extends Controller
                     "response_code" => 201,
                     "response_data" => "Article object",
                 ],
- [
-    "method" => "GET",
-    "path" => "/api/v1/articles/my/{id}",
-    "description" => "View details of an article authored by the authenticated user, including co-authors and citations",
-    "auth_required" => true,
-    "roles" => ["author"],
-    "response_code" => 200,
-    "response_data" => [
-        "id" => "integer",
-        "title" => "string",
-        "abstract" => "string",
-        "filename" => "string",
-        "file_type" => "string",
-        "keywords" => "array",
-        "status" => "string",
-        "doi" => "string",
-        "authors" => [
-            [
-                "name" => "string",
-                "orcid" => "string|null",
-                "is_primary" => "boolean"
-            ]
-        ],
-        "citations" => [
-            [
-                "id" => "integer",
-                "title" => "string",
-                "doi" => "string"
-            ]
-        ]
-    ]
-],
                 [
                     "method" => "GET",
-                    "path" => "/api/v1/articles/my/{id}",
-                    "description" => "View own article details",
+                    "path" => "/api/v1/articles/my",
+                    "description" => "List own articles and statuses (paginated, showing id, title, abstract, doi, status)",
                     "auth_required" => true,
                     "roles" => ["author"],
                     "response_code" => 200,
-                    "response_data" => "Article object + users name + orcid + citations" ,
+                    "response_data" => [
+                        "data" => [
+                            [
+                                "id" => "integer",
+                                "title" => "string",
+                                "abstract" => "string",
+                                "doi" => "string|null",
+                                "status" => "string",
+                            ],
+                        ],
+                        "pagination" => [
+                            "current_page" => "integer",
+                            "per_page" => "integer",
+                            "total" => "integer",
+                            "last_page" => "integer",
+                        ],
+                    ],
                 ],
+
                 [
+                    "method" => "GET",
+                    "path" => "/api/v1/articles/my/{id}",
+                    "description" => "View details of an article authored by the authenticated user, including co-authors and citations",
+                    "auth_required" => true,
+                    "roles" => ["author"],
+                    "response_code" => 200,
+                    "response_data" => [
+                        "id" => "integer",
+                        "title" => "string",
+                        "abstract" => "string",
+                        "filename" => "string",
+                        "file_type" => "string",
+                        "keywords" => "array",
+                        "status" => "string",
+                        "doi" => "string",
+                        "authors" => [
+                            [
+                                "name" => "string",
+                                "orcid" => "string|null",
+                                "is_primary" => "boolean",
+                            ],
+                        ],
+                        "citations" => [
+                            [
+                                "id" => "integer",
+                                "title" => "string",
+                                "doi" => "string",
+                            ],
+                        ],
+                    ],
+                ],
+                [// implement
                     "method" => "POST",
                     "path" => "/api/v1/articles/my/{id}/revision",
                     "description" => "Submit revision after reviewer feedback",
@@ -87,7 +105,7 @@ class v1ArticleController extends Controller
                     "response_code" => 200,
                     "response_data" => "Article object",
                 ],
-                [
+                [// implement
                     "method" => "GET",
                     "path" => "/api/v1/articles/my/{id}/comments",
                     "description" => "View reviewer comments",
@@ -98,7 +116,7 @@ class v1ArticleController extends Controller
                 ],
 
                 // === REVIEWER ENDPOINTS ===
-                [
+                [// implement
                     "method" => "GET",
                     "path" => "/api/v1/articles/assigned",
                     "description" => "List assigned articles",
@@ -107,7 +125,7 @@ class v1ArticleController extends Controller
                     "response_code" => 200,
                     "response_data" => "Array of Article objects",
                 ],
-                [
+                [// implement
                     "method" => "GET",
                     "path" => "/api/v1/articles/assigned/{id}",
                     "description" => "View assigned article details",
@@ -116,7 +134,7 @@ class v1ArticleController extends Controller
                     "response_code" => 200,
                     "response_data" => "Article object",
                 ],
-                [
+                [// implement
                     "method" => "POST",
                     "path" => "/api/v1/articles/assigned/{id}/review",
                     "description" => "Submit review feedback",
@@ -134,13 +152,57 @@ class v1ArticleController extends Controller
                 [
                     "method" => "GET",
                     "path" => "/api/v1/articles",
-                    "description" => "List all articles",
+                    "description" => "List all articles with full details, including authors, citations, and articles that cite them. Paginated to 5 per page.",
                     "auth_required" => true,
                     "roles" => ["admin"],
                     "response_code" => 200,
-                    "response_data" => "Array of Article objects",
+                    "response_data" => [
+                        "current_page" => "integer",
+                        "per_page" => "integer",
+                        "total" => "integer",
+                        "data" => [
+                            [
+                                "id" => "integer",
+                                "title" => "string",
+                                "abstract" => "string",
+                                "filename" => "string",
+                                "file_type" => "string",
+                                "keywords" => "array",
+                                "status" => "string",
+                                "doi" => "string",
+                                "authors" => [
+                                    [
+                                        "id" => "integer",
+                                        "name" => "string",
+                                        "email" => "string",
+                                        "role_id" => "integer",
+                                        "role_name" => "string",
+                                        "affiliation" => "string|null",
+                                        "bio" => "string|null",
+                                        "deactivated" => "boolean",
+                                        "orcid" => "string|null",
+                                        "is_primary" => "boolean",
+                                    ],
+                                ],
+                                "citations" => [
+                                    [
+                                        "id" => "integer",
+                                        "title" => "string",
+                                        "doi" => "string",
+                                    ],
+                                ],
+                                "cited_by" => [
+                                    [
+                                        "id" => "integer",
+                                        "title" => "string",
+                                        "doi" => "string",
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
                 ],
-                [
+                [// implement
                     "method" => "PATCH",
                     "path" => "/api/v1/articles/{id}/assign-reviewers",
                     "description" => "Assign reviewers to an article",
@@ -152,7 +214,7 @@ class v1ArticleController extends Controller
                     "response_code" => 200,
                     "response_data" => "Article object",
                 ],
-                [
+                [// implement
                     "method" => "PATCH",
                     "path" => "/api/v1/articles/{id}/decision",
                     "description" => "Make final decision on an article",
@@ -164,7 +226,7 @@ class v1ArticleController extends Controller
                     "response_code" => 200,
                     "response_data" => "Article object",
                 ],
-                [
+                [// implement
                     "method" => "PATCH",
                     "path" => "/api/v1/articles/{id}/publish",
                     "description" => "Publish an accepted article",
@@ -198,8 +260,8 @@ class v1ArticleController extends Controller
             "filename" => $filename,
             "file_type" => $file->getClientOriginalExtension(),
             "keywords" => $data["keywords"] ?? [],
-            "status" => "submission",
-        ]);
+            "status_id" => ArticleStatus::DRAFT->value,
+        ]); 
         $article->authors()->attach($request->user()->id, ["is_primary" => 1]);
         event(new ArticleSubmitted($article));
 
@@ -210,68 +272,119 @@ class v1ArticleController extends Controller
     }
 
     public function myArticles(Request $request): JsonResponse
-{
-    $user = $request->user();
+    {
+        $user = $request->user();
 
-    // Fetch only the required fields and paginate
-    $articles = Article::whereHas("authors", function ($query) use ($user): void {
-        $query->where("user_id", $user->id);
-    })
-    ->select("id", "title", "abstract", "doi", "status")
-    ->paginate(10);
+        $articles = Article::whereHas("authors", function ($query) use ($user): void {
+            $query->where("user_id", $user->id);
+        })
+            ->join("article_statuses as s", "articles.status_id", "=", "s.id")
+            ->select(
+                "articles.id",
+                "articles.title",
+                "articles.abstract",
+                "articles.doi",
+                "s.name as status",
+            )
+            ->paginate(10);
 
-    return response()->json([
-        "status" => "success",
-        "data" => $articles->items(),
-        "pagination" => [
-            "current_page" => $articles->currentPage(),
-            "per_page" => $articles->perPage(),
-            "total" => $articles->total(),
-            "last_page" => $articles->lastPage(),
-        ],
-    ], 200);
-}
-
-public function myArticle(Request $request, int $id): JsonResponse
-{
-    $user = $request->user();
-
-    $article = Article::with([
-        'authors:id,name,orcid',
-        'citations:id,title,doi'
-    ])
-    ->whereHas('authors', function ($query) use ($user) {
-        $query->where('user_id', $user->id);
-    })
-    ->find($id);
-
-    if (!$article) {
         return response()->json([
-            'message' => 'Article not found or you do not have access.'
-        ], 404);
+            "status" => "success",
+            "data" => $articles->items(),
+            "pagination" => [
+                "current_page" => $articles->currentPage(),
+                "per_page" => $articles->perPage(),
+                "total" => $articles->total(),
+                "last_page" => $articles->lastPage(),
+            ],
+        ], 200);
     }
 
-    $response = [
-        'id' => $article->id,
-        'title' => $article->title,
-        'abstract' => $article->abstract,
-        'filename' => $article->filename,
-        'file_type' => $article->file_type,
-        'keywords' => $article->keywords,
-        'status' => $article->status,
-        'doi' => $article->doi,
-        'authors' => $article->authors->map(fn($a) => [
-            'name' => $a->name,
-            'orcid' => $a->orcid,
-            'is_primary' => $a->pivot->is_primary
-        ]),
-        'citations' => $article->citations->map(fn($c) => [
-            'id' => $c->id,
-            'title' => $c->title,
-            'doi' => $c->doi
-        ]),
-    ];
+    public function myArticle(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
 
-    return response()->json($response, 200);
-}
+        $article = Article::with([
+            "authors:id,name,orcid",
+            "citations:id,title,doi",
+            "status:id,name", // eager load status
+        ])
+            ->whereHas("authors", function ($query) use ($user): void {
+                $query->where("user_id", $user->id);
+            })
+            ->find($id);
+
+        if (!$article) {
+            return response()->json([
+                "message" => "Article not found or you do not have access.",
+            ], 404);
+        }
+
+        $response = [
+            "id" => $article->id,
+            "title" => $article->title,
+            "abstract" => $article->abstract,
+            "filename" => $article->filename,
+            "file_type" => $article->file_type,
+            "keywords" => $article->keywords,
+            "status" => $article->status->name,
+            "doi" => $article->doi,
+            "authors" => $article->authors->map(fn($a) => [
+                "name" => $a->name,
+                "orcid" => $a->orcid,
+                "is_primary" => $a->pivot->is_primary,
+            ]),
+            "citations" => $article->citations->map(fn($c) => [
+                "id" => $c->id,
+                "title" => $c->title,
+                "doi" => $c->doi,
+            ]),
+        ];
+
+        return response()->json($response, 200);
+    }
+
+    public function listAllArticles(Request $request): JsonResponse
+    {
+        // Paginate articles, eager-load relationships
+        $articles = Article::with([
+            "authors" => function ($query): void {
+                $query->select([
+                    "users.id",
+                    "users.name",
+                    "users.email",
+                    "users.role_id",
+                    "users.affiliation",
+                    "users.bio",
+                    "users.deactivated",
+                    "users.orcid",
+                ])->with("role");
+            },
+            "citations:id,title,doi",
+            "citedBy:id,title,doi",
+            "status:id,name",
+        ])
+            ->paginate(5);
+
+        $articles->getCollection()->transform(function ($article) {
+            $article->authors = $article->authors->map(fn($author) => [
+                "id" => $author->id,
+                "name" => $author->name,
+                "email" => $author->email,
+                "role_id" => $author->role_id,
+                "role_name" => $author->role?->name ?? null,
+                "affiliation" => $author->affiliation,
+                "bio" => $author->bio,
+                "deactivated" => (bool)$author->deactivated,
+                "orcid" => $author->orcid,
+                "is_primary" => (bool)$author->pivot->is_primary,
+            ]);
+
+            $article->status = $article->status?->name ?? null;
+
+            return $article;
+        });
+
+        return response()->json($articles, 200);
+    }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\ArticleStatus;
 use App\Models\Article;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -19,7 +20,7 @@ class ArticleSeeder extends Seeder
         // Pick some users as authors
         $authors = User::take(5)->get(); // first 5 users
 
-        // Create 3 sample articles
+        // Create sample articles
         $articleData = [
             [
                 "title" => "Quantum Computing for Beginners",
@@ -27,7 +28,7 @@ class ArticleSeeder extends Seeder
                 "filename" => "articles/qc_beginners.pdf",
                 "file_type" => "pdf",
                 "keywords" => ["quantum", "computing", "introduction"],
-                "status" => "submission",
+                "status_id" => ArticleStatus::SUBMITTED->value,
                 "doi" => "10.1234/sv.001",
             ],
             [
@@ -36,7 +37,7 @@ class ArticleSeeder extends Seeder
                 "filename" => "articles/deep_nlp.tex",
                 "file_type" => "tex",
                 "keywords" => ["deep learning", "NLP", "AI"],
-                "status" => "under_review",
+                "status_id" => ArticleStatus::UNDER_REVIEW->value,
                 "doi" => "10.1234/sv.002",
             ],
             [
@@ -45,12 +46,13 @@ class ArticleSeeder extends Seeder
                 "filename" => "articles/blockchain_finance.pdf",
                 "file_type" => "pdf",
                 "keywords" => ["blockchain", "finance", "crypto"],
-                "status" => "revision_requested",
+                "status_id" => ArticleStatus::REVISION_REQUIRED->value,
                 "doi" => "10.1234/sv.003",
             ],
         ];
 
         foreach ($articleData as $i => $data) {
+            // Create article
             $article = Article::create($data);
 
             // Attach random authors (1-3 authors per article)

@@ -24,16 +24,6 @@ return new class() extends Migration {
             $table->json("keywords")->nullable();
             $table->string("doi")->nullable()->unique();
 
-            // Lifecycle status
-            $table->enum("status", [
-                "submission",
-                "under_review",
-                "revision_requested",
-                "accepted",
-                "rejected",
-                "published",
-            ])->default("submission");
-
             $table->timestamps();
         });
     }
