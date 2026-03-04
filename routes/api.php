@@ -26,6 +26,7 @@ Route::prefix("v1")->group(function (): void {
             Route::post("/", [v1ArticleController::class, "store"]);
 
             // List own articles
+            Route::get("/my", [v1ArticleController::class, "myArticles"]);
 
             // View own article
 

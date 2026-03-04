@@ -23,3 +23,15 @@ curl -s -X POST "$API_BASE_URL/articles" \
 
 echo
 echo "Submission complete."
+echo "press any key to continue"
+read
+
+# === GET own articles (paginated) ===
+echo "=== GET /api/v1/articles/my?page=1&per_page=10 ==="
+curl -s -X GET "$API_BASE_URL/articles/my?page=1&per_page=10" \
+    -H "Accept: application/json" \
+    -H "Authorization: Bearer $AUTHOR_TOKEN" \
+    | jq .
+
+echo
+echo "Listing complete."

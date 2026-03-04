@@ -36,11 +36,19 @@ class v1ArticleController extends Controller
                 [
                     "method" => "GET",
                     "path" => "/api/v1/articles/my",
-                    "description" => "List own articles and statuses",
+                    "description" => "List own articles and statuses (paginated)",
                     "auth_required" => true,
                     "roles" => ["author"],
                     "response_code" => 200,
-                    "response_data" => "Array of Article objects",
+                    "response_data" => [
+                        "data" => "Array of Article objects for the current page",
+                        "pagination" => [
+                            "current_page" => "integer",
+                            "per_page" => "integer",
+                            "total" => "integer",
+                            "last_page" => "integer",
+                        ],
+                    ],
                 ],
                 [
                     "method" => "GET",
@@ -184,5 +192,25 @@ class v1ArticleController extends Controller
             "status" => "success",
             "data" => $article,
         ], 201);
+    }
+
+    public function myArticles(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $articles = Article::whereHas("authors", function ($query) use ($user): void {
+            $query->where("user_id", $user->id);
+        })->paginate(10);
+
+        return response()->json([
+            "status" => "success",
+            "data" => $articles->items(),
+            "pagination" => [
+                "current_page" => $articles->currentPage(),
+                "per_page" => $articles->perPage(),
+                "total" => $articles->total(),
+                "last_page" => $articles->lastPage(),
+            ],
+        ], 200);
     }
 }
