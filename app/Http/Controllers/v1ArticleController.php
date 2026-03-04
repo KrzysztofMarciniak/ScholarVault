@@ -33,23 +33,38 @@ class v1ArticleController extends Controller
                     "response_code" => 201,
                     "response_data" => "Article object",
                 ],
-                [
-                    "method" => "GET",
-                    "path" => "/api/v1/articles/my",
-                    "description" => "List own articles and statuses (paginated)",
-                    "auth_required" => true,
-                    "roles" => ["author"],
-                    "response_code" => 200,
-                    "response_data" => [
-                        "data" => "Array of Article objects for the current page",
-                        "pagination" => [
-                            "current_page" => "integer",
-                            "per_page" => "integer",
-                            "total" => "integer",
-                            "last_page" => "integer",
-                        ],
-                    ],
-                ],
+ [
+    "method" => "GET",
+    "path" => "/api/v1/articles/my/{id}",
+    "description" => "View details of an article authored by the authenticated user, including co-authors and citations",
+    "auth_required" => true,
+    "roles" => ["author"],
+    "response_code" => 200,
+    "response_data" => [
+        "id" => "integer",
+        "title" => "string",
+        "abstract" => "string",
+        "filename" => "string",
+        "file_type" => "string",
+        "keywords" => "array",
+        "status" => "string",
+        "doi" => "string",
+        "authors" => [
+            [
+                "name" => "string",
+                "orcid" => "string|null",
+                "is_primary" => "boolean"
+            ]
+        ],
+        "citations" => [
+            [
+                "id" => "integer",
+                "title" => "string",
+                "doi" => "string"
+            ]
+        ]
+    ]
+],
                 [
                     "method" => "GET",
                     "path" => "/api/v1/articles/my/{id}",
@@ -57,7 +72,7 @@ class v1ArticleController extends Controller
                     "auth_required" => true,
                     "roles" => ["author"],
                     "response_code" => 200,
-                    "response_data" => "Article object",
+                    "response_data" => "Article object + users name + orcid + citations" ,
                 ],
                 [
                     "method" => "POST",
@@ -195,22 +210,68 @@ class v1ArticleController extends Controller
     }
 
     public function myArticles(Request $request): JsonResponse
-    {
-        $user = $request->user();
+{
+    $user = $request->user();
 
-        $articles = Article::whereHas("authors", function ($query) use ($user): void {
-            $query->where("user_id", $user->id);
-        })->paginate(10);
+    // Fetch only the required fields and paginate
+    $articles = Article::whereHas("authors", function ($query) use ($user): void {
+        $query->where("user_id", $user->id);
+    })
+    ->select("id", "title", "abstract", "doi", "status")
+    ->paginate(10);
 
+    return response()->json([
+        "status" => "success",
+        "data" => $articles->items(),
+        "pagination" => [
+            "current_page" => $articles->currentPage(),
+            "per_page" => $articles->perPage(),
+            "total" => $articles->total(),
+            "last_page" => $articles->lastPage(),
+        ],
+    ], 200);
+}
+
+public function myArticle(Request $request, int $id): JsonResponse
+{
+    $user = $request->user();
+
+    $article = Article::with([
+        'authors:id,name,orcid',
+        'citations:id,title,doi'
+    ])
+    ->whereHas('authors', function ($query) use ($user) {
+        $query->where('user_id', $user->id);
+    })
+    ->find($id);
+
+    if (!$article) {
         return response()->json([
-            "status" => "success",
-            "data" => $articles->items(),
-            "pagination" => [
-                "current_page" => $articles->currentPage(),
-                "per_page" => $articles->perPage(),
-                "total" => $articles->total(),
-                "last_page" => $articles->lastPage(),
-            ],
-        ], 200);
+            'message' => 'Article not found or you do not have access.'
+        ], 404);
     }
+
+    $response = [
+        'id' => $article->id,
+        'title' => $article->title,
+        'abstract' => $article->abstract,
+        'filename' => $article->filename,
+        'file_type' => $article->file_type,
+        'keywords' => $article->keywords,
+        'status' => $article->status,
+        'doi' => $article->doi,
+        'authors' => $article->authors->map(fn($a) => [
+            'name' => $a->name,
+            'orcid' => $a->orcid,
+            'is_primary' => $a->pivot->is_primary
+        ]),
+        'citations' => $article->citations->map(fn($c) => [
+            'id' => $c->id,
+            'title' => $c->title,
+            'doi' => $c->doi
+        ]),
+    ];
+
+    return response()->json($response, 200);
+}
 }

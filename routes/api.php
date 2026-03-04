@@ -29,7 +29,7 @@ Route::prefix("v1")->group(function (): void {
             Route::get("/my", [v1ArticleController::class, "myArticles"]);
 
             // View own article
-
+            Route::get("/my/{id}", [v1ArticleController::class, "myArticle"]);
             // Submit revision
 
             // View comments

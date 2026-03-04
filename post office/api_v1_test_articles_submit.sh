@@ -35,3 +35,19 @@ curl -s -X GET "$API_BASE_URL/articles/my?page=1&per_page=10" \
 
 echo
 echo "Listing complete."
+echo "Enter to continue"
+read
+
+echo "=== GET /api/v1/articles/my/4 ==="
+
+curl -s -X GET "$API_BASE_URL/articles/my/4" \
+    -H "Accept: application/json" \
+    -H "Authorization: Bearer $AUTHOR_TOKEN" \
+    | jq .
+
+echo "=== GET /api/v1/articles/my/999 ==="
+
+curl -s -X GET "$API_BASE_URL/articles/my/999" \
+    -H "Accept: application/json" \
+    -H "Authorization: Bearer $AUTHOR_TOKEN" \
+    | jq .
