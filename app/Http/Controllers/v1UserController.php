@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Events\UserModifiedByAdmin;
+use App\Events\UserUpdatedSelf;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -277,7 +278,14 @@ class v1UserController extends v1Controller
             "bio" => "sometimes|nullable|string",
         ]);
 
-        $user->update($data);
+        $user->fill($data);
+
+        $dirty = $user->getDirty();
+        $user->save();
+
+        if (!empty($dirty)) {
+            event(new UserUpdatedSelf($user, array_keys($dirty)));
+        }
 
         return response()->json([
             "status" => "success",

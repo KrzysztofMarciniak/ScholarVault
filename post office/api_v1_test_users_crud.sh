@@ -184,7 +184,7 @@ curl -s -X PUT "$API_BASE_URL/users/self" \
     -H "Accept: application/json" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -d '{
-        "bio": "test bio"
+        "bio": "test bio SELF"
     }' | jq .
 
 # Get bearer token

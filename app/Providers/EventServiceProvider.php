@@ -19,6 +19,9 @@ class EventServiceProvider extends ServiceProvider
         UserModifiedByAdmin::class => [
             StoreUserModifiedNotification::class,
         ],
+    \App\Events\UserUpdatedSelf::class => [
+        \App\Listeners\StoreUserUpdatedSelfNotification::class,
+    ],
     ];
 
     public function boot(): void
