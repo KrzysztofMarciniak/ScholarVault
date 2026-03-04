@@ -51,9 +51,9 @@ Route::prefix("v1")->group(function (): void {
         // =========================
         Route::middleware(["auth:sanctum", "roles:" . Role::ADMINISTRATOR])->group(function (): void {
             // List all
-
+            Route::get("/", [v1ArticleController::class,"AdminlistAllArticles"]);
             // Assign reviewers
-
+            Route::patch("/{id}/reviewers", [v1ArticleController::class,"AdminAssignReviewers"]);
             // Make decision
 
             // Publish article

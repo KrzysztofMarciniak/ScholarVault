@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 namespace App\Http\Controllers;
-
 use App\Enums\ArticleStatus;
 use App\Events\ArticleSubmitted;
 use App\Models\Article;
@@ -202,18 +201,21 @@ class v1ArticleController extends Controller
                         ],
                     ],
                 ],
-                [// implement
-                    "method" => "PATCH",
-                    "path" => "/api/v1/articles/{id}/assign-reviewers",
-                    "description" => "Assign reviewers to an article",
-                    "auth_required" => true,
-                    "roles" => ["admin"],
-                    "request_body" => [
-                        "reviewers" => "array|required|exists:users,id",
-                    ],
-                    "response_code" => 200,
-                    "response_data" => "Article object",
-                ],
+
+[
+    "method" => "PATCH",
+    "path" => "/api/v1/articles/{id}/reviewers",
+    "description" => "Replace all reviewers assigned to an article (admin only). Existing reviewers are removed if not included in request.",
+    "auth_required" => true,
+    "roles" => ["admin"],
+    "request_body" => [
+        "reviewers" => "array|required",
+        "reviewers.*" => "integer|exists:users,id (must have reviewer role)"
+    ],
+    "behavior" => "sync (overwrite)",
+    "response_code" => 200,
+    "response_data" => "Updated Article resource with reviewers"
+],
                 [// implement
                     "method" => "PATCH",
                     "path" => "/api/v1/articles/{id}/decision",
@@ -343,48 +345,90 @@ class v1ArticleController extends Controller
 
         return response()->json($response, 200);
     }
-
-    public function listAllArticles(Request $request): JsonResponse
+    public function AdminAssignReviewers(Request $request, int $id)
     {
-        // Paginate articles, eager-load relationships
-        $articles = Article::with([
-            "authors" => function ($query): void {
-                $query->select([
-                    "users.id",
-                    "users.name",
-                    "users.email",
-                    "users.role_id",
-                    "users.affiliation",
-                    "users.bio",
-                    "users.deactivated",
-                    "users.orcid",
-                ])->with("role");
-            },
-            "citations:id,title,doi",
-            "citedBy:id,title,doi",
-            "status:id,name",
-        ])
-            ->paginate(5);
+        // 1. Fetch article
+        $article = Article::findOrFail($id);
 
-        $articles->getCollection()->transform(function ($article) {
-            $article->authors = $article->authors->map(fn($author) => [
+        $validated = $request->validate([
+    'reviewers' => ['required', 'array'],
+    'reviewers.*' => [
+        'integer',
+        function ($attribute, $value, $fail) {
+            $user = \App\Models\User::find($value);
+            if (!$user || $user->role_id !== \App\Models\Role::REVIEWER) {
+                $fail("The user ID {$value} is not a valid reviewer.");
+            }
+        },
+    ],
+]);
+
+
+        // 3. Sync reviewers (overwrite behavior)
+        $article->reviewers()->sync($validated['reviewers']);
+
+        // 4. Reload reviewers relation
+        $article->load('reviewers');
+
+        // 5. Return updated resource
+        return response()->json($article, 200);
+    }
+public function AdminlistAllArticles(Request $request): JsonResponse
+{
+    $articles = Article::with([
+        "authors" => fn($q) => $q->select([
+            "users.id",
+            "users.name",
+            "users.email",
+            "users.role_id",
+            "users.affiliation",
+            "users.bio",
+            "users.deactivated",
+            "users.orcid",
+        ])->with("role"),
+        "citations:id,title,doi",
+        "citedBy:id,title,doi",
+        "status:id,name",
+    ])->paginate(5);
+
+    $articles->getCollection()->transform(function ($article) {
+        return [
+            "id" => $article->id,
+            "title" => $article->title,
+            "abstract" => $article->abstract,
+            "filename" => $article->filename,
+            "file_type" => $article->file_type,
+            "keywords" => $article->keywords,
+            "status" => $article->status?->name,
+            "doi" => $article->doi,
+
+            "authors" => $article->authors->map(fn($author) => [
                 "id" => $author->id,
                 "name" => $author->name,
                 "email" => $author->email,
                 "role_id" => $author->role_id,
-                "role_name" => $author->role?->name ?? null,
+                "role_name" => $author->role?->name,
                 "affiliation" => $author->affiliation,
                 "bio" => $author->bio,
-                "deactivated" => (bool)$author->deactivated,
+                "deactivated" => (bool) $author->deactivated,
                 "orcid" => $author->orcid,
-                "is_primary" => (bool)$author->pivot->is_primary,
-            ]);
+                "is_primary" => (bool) $author->pivot->is_primary,
+            ])->values(),
 
-            $article->status = $article->status?->name ?? null;
+            "citations" => $article->citations->map(fn($c) => [
+                "id" => $c->id,
+                "title" => $c->title,
+                "doi" => $c->doi,
+            ])->values(),
 
-            return $article;
-        });
+            "cited_by" => $article->citedBy->map(fn($c) => [
+                "id" => $c->id,
+                "title" => $c->title,
+                "doi" => $c->doi,
+            ])->values(),
+        ];
+    });
 
-        return response()->json($articles, 200);
-    }
+    return response()->json($articles, 200);
+}
 }

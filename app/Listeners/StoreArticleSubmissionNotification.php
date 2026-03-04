@@ -34,7 +34,6 @@ class StoreArticleSubmissionNotification
             );
         }
 
-        // Co-authors (excluding primary)
         $coAuthors = $article->authors()
             ->wherePivot("is_primary", 0)
             ->get();
