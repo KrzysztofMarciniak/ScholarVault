@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Events\UserChangedPassword;
 use App\Events\UserModifiedByAdmin;
 use App\Events\UserUpdatedSelf;
 use App\Models\Role;
@@ -386,6 +387,8 @@ class v1UserController extends v1Controller
         $user->update([
             "password" => Hash::make($data["new_password"]),
         ]);
+
+        event(new UserChangedPassword($user));
 
         return response()->json([
             "status" => "success",

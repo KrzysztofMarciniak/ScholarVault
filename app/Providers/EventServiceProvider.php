@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Events\UserChangedPassword;
 use App\Events\UserModifiedByAdmin;
+use App\Events\UserUpdatedSelf;
+use App\Listeners\StoreUserChangedPasswordNotification;
 use App\Listeners\StoreUserModifiedNotification;
+use App\Listeners\StoreUserUpdatedSelfNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
@@ -19,9 +23,12 @@ class EventServiceProvider extends ServiceProvider
         UserModifiedByAdmin::class => [
             StoreUserModifiedNotification::class,
         ],
-    \App\Events\UserUpdatedSelf::class => [
-        \App\Listeners\StoreUserUpdatedSelfNotification::class,
-    ],
+        UserUpdatedSelf::class => [
+            StoreUserUpdatedSelfNotification::class,
+        ],
+        UserChangedPassword::class => [
+            StoreUserChangedPasswordNotification::class,
+        ],
     ];
 
     public function boot(): void
