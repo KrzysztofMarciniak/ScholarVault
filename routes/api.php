@@ -40,10 +40,11 @@ Route::prefix("v1")->group(function (): void {
         // =========================
         Route::middleware(["auth:sanctum", "roles:" . Role::REVIEWER])->group(function (): void {
             // List assigned
-
+            Route::get("/assigned", [v1ArticleController::class, "assignedArticles"]);
             // View assigned article
-
+            Route::get('/assigned/{id}', [v1ArticleController::class, 'assignedArticle']);
             // Submit review
+           Route::post('/assigned/{id}/review',[v1ArticleController::class, 'submitAssignedReview']);
         });
 
         // =========================
@@ -51,9 +52,9 @@ Route::prefix("v1")->group(function (): void {
         // =========================
         Route::middleware(["auth:sanctum", "roles:" . Role::ADMINISTRATOR])->group(function (): void {
             // List all
-            Route::get("/", [v1ArticleController::class,"AdminlistAllArticles"]);
+            Route::get("/", [v1ArticleController::class, "AdminlistAllArticles"]);
             // Assign reviewers
-            Route::patch("/{id}/reviewers", [v1ArticleController::class,"AdminAssignReviewers"]);
+            Route::patch("/{id}/reviewers", [v1ArticleController::class, "AdminAssignReviewers"]);
             // Make decision
 
             // Publish article

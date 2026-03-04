@@ -30,12 +30,13 @@ class Article extends Model
         return $this->belongsTo(ArticleStatus::class, "status_id");
     }
 
-public function reviewers()
-{
-    return $this->belongsToMany(User::class, 'article_user')
-        ->withTimestamps()
-        ->where('role_id', \App\Models\Role::REVIEWER);
-}
+    public function reviewers()
+    {
+        return $this->belongsToMany(User::class, "article_user")
+            ->withTimestamps()
+            ->where("role_id", Role::REVIEWER);
+    }
+
     // Multiple authors
     public function authors()
     {

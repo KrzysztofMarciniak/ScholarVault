@@ -10,14 +10,11 @@ use Illuminate\Queue\SerializesModels;
 
 class ReviewersAssigned
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
-    public Article $article;
-    public array $reviewerIds;
-
-    public function __construct(Article $article, array $reviewerIds)
-    {
-        $this->article = $article;
-        $this->reviewerIds = $reviewerIds;
-    }
+    public function __construct(
+        public Article $article,
+        public array $reviewerIds,
+    ) {}
 }
