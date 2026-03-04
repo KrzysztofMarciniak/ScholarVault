@@ -16,7 +16,7 @@ class StoreUserUpdatedSelfNotification
     /**
      * Handle the event.
      */
-    public function handle(object $event): void
+    public function handle(UserUpdatedSelf $event): void
     {
         Notification::create([
             "user_id" => $event->user->id,

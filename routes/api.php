@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Http\Controllers\v1ArticleController;
 use App\Http\Controllers\v1LoginController;
 use App\Http\Controllers\v1RegisterController;
 use App\Http\Controllers\v1TestController;
@@ -12,6 +13,52 @@ use Illuminate\Support\Facades\Route;
 
 // --- /api/v1/ ---
 Route::prefix("v1")->group(function (): void {
+    // --- /api/v1/articles ---
+    Route::prefix("articles")->group(function (): void {
+        // Help endpoint
+        Route::get("help", [v1ArticleController::class, "help"]);
+
+        // =========================
+        // AUTHOR ROUTES
+        // =========================
+        Route::middleware(["auth:sanctum", "roles:" . Role::AUTHOR])->group(function (): void {
+            // Submit article
+            Route::post("/", [v1ArticleController::class, "store"]);
+
+            // List own articles
+
+            // View own article
+
+            // Submit revision
+
+            // View comments
+        });
+
+        // =========================
+        // REVIEWER ROUTES
+        // =========================
+        Route::middleware(["auth:sanctum", "roles:" . Role::REVIEWER])->group(function (): void {
+            // List assigned
+
+            // View assigned article
+
+            // Submit review
+        });
+
+        // =========================
+        // ADMIN ROUTES
+        // =========================
+        Route::middleware(["auth:sanctum", "roles:" . Role::ADMINISTRATOR])->group(function (): void {
+            // List all
+
+            // Assign reviewers
+
+            // Make decision
+
+            // Publish article
+        });
+    });
+
     // --- /api/v1/register ---
     Route::prefix("register")->group(function (): void {
         Route::get("/help", [v1RegisterController::class, "help"]);

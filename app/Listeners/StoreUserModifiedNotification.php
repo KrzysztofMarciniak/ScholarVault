@@ -16,7 +16,7 @@ class StoreUserModifiedNotification
     /**
      * Handle the event.
      */
-    public function handle(object $event): void
+    public function handle(UserModification $event): void
     {
         Notification::create([
             "user_id" => $event->modifiedUser->id,

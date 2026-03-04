@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Events\ArticleSubmitted;
+use App\Models\Article;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
 class v1ArticleController extends Controller
 {
     public function help(): JsonResponse
@@ -15,13 +21,13 @@ class v1ArticleController extends Controller
                 [
                     "method" => "POST",
                     "path" => "/api/v1/articles",
-                    "description" => "Submit a new article",
+                    "description" => "Submit a new article (PDF or TeX file required)",
                     "auth_required" => true,
                     "roles" => ["author"],
                     "request_body" => [
                         "title" => "string|required|max:255",
                         "abstract" => "string|required",
-                        "content" => "string|required",
+                        "file" => "file|required|mimes:pdf,tex",
                         "keywords" => "array|nullable",
                     ],
                     "response_code" => 201,
@@ -29,7 +35,7 @@ class v1ArticleController extends Controller
                 ],
                 [
                     "method" => "GET",
-                    "path" => "/api/v1/articles",
+                    "path" => "/api/v1/articles/my",
                     "description" => "List own articles and statuses",
                     "auth_required" => true,
                     "roles" => ["author"],
@@ -38,7 +44,7 @@ class v1ArticleController extends Controller
                 ],
                 [
                     "method" => "GET",
-                    "path" => "/api/v1/articles/{id}",
+                    "path" => "/api/v1/articles/my/{id}",
                     "description" => "View own article details",
                     "auth_required" => true,
                     "roles" => ["author"],
@@ -47,20 +53,20 @@ class v1ArticleController extends Controller
                 ],
                 [
                     "method" => "POST",
-                    "path" => "/api/v1/articles/{id}/revision",
+                    "path" => "/api/v1/articles/my/{id}/revision",
                     "description" => "Submit revision after reviewer feedback",
                     "auth_required" => true,
                     "roles" => ["author"],
                     "request_body" => [
-                        "content" => "string|required",
-                        "revised_at" => "datetime|required",
+                        "file" => "file|required|mimes:pdf,tex",
+                        "notes" => "string|nullable",
                     ],
                     "response_code" => 200,
                     "response_data" => "Article object",
                 ],
                 [
                     "method" => "GET",
-                    "path" => "/api/v1/articles/{id}/comments",
+                    "path" => "/api/v1/articles/my/{id}/comments",
                     "description" => "View reviewer comments",
                     "auth_required" => true,
                     "roles" => ["author"],
@@ -80,7 +86,7 @@ class v1ArticleController extends Controller
                 ],
                 [
                     "method" => "GET",
-                    "path" => "/api/v1/articles/{id}",
+                    "path" => "/api/v1/articles/assigned/{id}",
                     "description" => "View assigned article details",
                     "auth_required" => true,
                     "roles" => ["reviewer"],
@@ -89,7 +95,7 @@ class v1ArticleController extends Controller
                 ],
                 [
                     "method" => "POST",
-                    "path" => "/api/v1/articles/{id}/review",
+                    "path" => "/api/v1/articles/assigned/{id}/review",
                     "description" => "Submit review feedback",
                     "auth_required" => true,
                     "roles" => ["reviewer"],
@@ -118,7 +124,7 @@ class v1ArticleController extends Controller
                     "auth_required" => true,
                     "roles" => ["admin"],
                     "request_body" => [
-                        "reviewers" => "array|required|of user_ids",
+                        "reviewers" => "array|required|exists:users,id",
                     ],
                     "response_code" => 200,
                     "response_data" => "Article object",
@@ -146,5 +152,37 @@ class v1ArticleController extends Controller
                 ],
             ],
         ]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        // Validate request (file, title, abstract, optional keywords)
+        $data = $request->validate([
+            "title" => "required|string|max:255",
+            "abstract" => "required|string",
+            "file" => "required|file|mimes:pdf,tex",
+            "keywords" => "array|nullable",
+        ]);
+
+        // Handle file upload
+        $file = $request->file("file");
+        $filename = $file->store("articles", "public"); // stored in storage/app/public/articles
+
+        // Create article
+        $article = Article::create([
+            "title" => $data["title"],
+            "abstract" => $data["abstract"],
+            "filename" => $filename,
+            "file_type" => $file->getClientOriginalExtension(),
+            "keywords" => $data["keywords"] ?? [],
+            "status" => "submission",
+        ]);
+        $article->authors()->attach($request->user()->id, ["is_primary" => 1]);
+        event(new ArticleSubmitted($article));
+
+        return response()->json([
+            "status" => "success",
+            "data" => $article,
+        ], 201);
     }
 }

@@ -22,6 +22,13 @@ class SanitizeWithSanitizer
             "affiliation" => "trim|escape",
             "orcid" => "trim|escape|digit",
             "bio" => "trim|escape",
+            "title" => "escape|trim|capitalize",
+            "abstract" => "escape|trim|capitalize",
+            "keywords" => "escape|trim",
+            "notes" => "escape|trim",
+            "comments" => "escape|trim",
+            "recommendation" => "escape|trim",
+            "reviewers" => "trim|digit|escape",
         ];
 
         $sanitizer = new Sanitizer($input, $filters);
