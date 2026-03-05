@@ -1,12 +1,12 @@
+// main.js (or app.js)
 import { renderLoginForm } from './login.js';
 import { renderRegisterForm } from './register.js';
 import { logout } from './logout.js';
 import { initThemeSwitcher } from './theme.js';
 import { initHamburger } from './hamburger.js';
-import { notifySuccess, notifyError } from "./notification.js";
+import { renderSidebar } from './sidebar.js'; // <-- ADDED THIS IMPORT
 
 const app = document.getElementById("app");
-
 
 initHamburger();
 
@@ -17,15 +17,16 @@ function getAuth() {
 }
 
 function ensureAxiosHeader(token) {
-    if (token) {
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    } else {
-        delete axios.defaults.headers.common["Authorization"];
+    if (typeof axios !== 'undefined') { // Safety check just in case
+        if (token) {
+            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        } else {
+            delete axios.defaults.headers.common["Authorization"];
+        }
     }
 }
 
 function renderMenu(renderCallback) {
-
     const { token, user } = getAuth();
     ensureAxiosHeader(token);
 
@@ -35,7 +36,6 @@ function renderMenu(renderCallback) {
     menu.innerHTML = "";
 
     if (user) {
-
         const userLi = document.createElement("li");
         userLi.textContent = `${user.name} (${user.role || "User"})`;
         menu.appendChild(userLi);
@@ -49,9 +49,7 @@ function renderMenu(renderCallback) {
 
         logoutLi.appendChild(logoutBtn);
         menu.appendChild(logoutLi);
-
     } else {
-
         const loginLi = document.createElement("li");
         const loginBtn = document.createElement("button");
         loginBtn.textContent = "Login";
@@ -70,20 +68,36 @@ function renderMenu(renderCallback) {
 }
 
 export function render() {
-
     app.innerHTML = "";
 
     const content = document.createElement("div");
     content.id = "content";
     content.style.padding = "1rem";
 
+    // Add margin to content if sidebar is fixed, so they don't overlap
+    const { user } = getAuth();
+    if (user) {
+        content.classList.add("ml-56"); // Assuming Tailwind: leaves room for your 56-width sidebar
+    }
+
     app.appendChild(content);
 
     renderMenu(render);
+
+    // <-- RENDER THE SIDEBAR HERE! -->
+    // You can pass your specific view-rendering functions in the callbacks object
+    renderSidebar({
+        adminDashboard: () => console.log("Rendering Admin Dashboard..."),
+        adminUsers: () => console.log("Rendering Admin Users..."),
+        adminArticles: () => console.log("Rendering Admin Articles..."),
+        myArticles: () => console.log("Rendering Author Articles..."),
+        submitArticle: () => console.log("Rendering Submit Article..."),
+        assignedReviews: () => console.log("Rendering Assigned Reviews..."),
+        reviewHistory: () => console.log("Rendering Review History...")
+    });
 }
 
 window.render = render;
 
 render();
-
 initThemeSwitcher();

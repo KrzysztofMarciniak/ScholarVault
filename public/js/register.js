@@ -1,34 +1,35 @@
-// register.js
 import { notifySuccess, notifyError } from "./notification.js";
 import { renderForm, resetFormErrors, markInvalid } from "./form.js";
 
 export function renderRegisterForm(render) {
 
-    // define the fields
     const { form, errorBox } = renderForm({
         title: "Register",
         submitText: "Register",
         fields: [
-            { name: "name", label: "Name", type: "text", required: false },
+            { name: "name", label: "Name", type: "text", required: true },
             { name: "email", label: "Email", type: "email", required: true },
-            { name: "password", label: "Password", type: "password", required: true }
+            { name: "password", label: "Password", type: "password", required: true },
+            { name: "affiliation", label: "Affiliation", type: "text", required: false },
+            { name: "orcid", label: "ORCID", type: "text", required: false },
+            { name: "bio", label: "Biography", type: "textarea", required: false },
         ]
     });
 
-    if (!form) return; // safety check
+    if (!form) return;
 
     form.onsubmit = async (e) => {
         e.preventDefault();
 
         resetFormErrors(form, errorBox);
 
-        const name = form.name.value;
-        const email = form.email.value;
-        const password = form.password.value;
+        const payload = {};
+        for (const field of form.elements) {
+            if (field.name) payload[field.name] = field.value;
+        }
 
         try {
-
-            const res = await axios.post("/api/v1/register", { name, email, password });
+            const res = await axios.post("/api/v1/register", payload);
 
             const token = res.data.token;
             const user = res.data.user;
@@ -48,6 +49,7 @@ export function renderRegisterForm(render) {
 
             notifyError(message);
 
+            // detailed validation errors
             if (data.errors) {
                 const lines = [];
                 for (const field in data.errors) {
