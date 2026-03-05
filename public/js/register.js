@@ -56,7 +56,6 @@ for (const field of form.elements) {
 
             notifyError(message);
 
-            // detailed validation errors
             if (data.errors) {
                 const lines = [];
                 for (const field in data.errors) {

@@ -1,7 +1,12 @@
 const app = document.getElementById("app");
 
 export async function renderUsers(page = 1) {
-    app.innerHTML = `<p class="text-gray-700 dark:text-gray-200">Loading users...</p>`;
+    app.innerHTML = `
+        <div class="flex items-center justify-center py-10 text-gray-500 dark:text-gray-400">
+            <i class="fa-solid fa-spinner fa-spin text-xl mr-2"></i>
+            Loading users...
+        </div>
+    `;
 
     try {
         const perPage = 15;
@@ -9,14 +14,23 @@ export async function renderUsers(page = 1) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const json = await res.json();
-        const users = json.data; // paginated users
+        const users = json.data;
         const currentPage = json.current_page;
         const lastPage = json.last_page;
 
         app.innerHTML = `
-            <h1 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">Users</h1>
-            <div id="usersList" class="flex flex-col gap-2 mb-4"></div>
-            <div id="pagination" class="flex gap-2 justify-center mt-4"></div>
+            <div class="max-w-4xl mx-auto px-4 py-6">
+
+                <h1 class="flex items-center gap-2 text-3xl font-semibold mb-6 text-gray-800 dark:text-gray-100">
+                    <i class="fa-solid fa-users text-gray-500"></i>
+                    Users
+                </h1>
+
+                <div id="usersList" class="flex flex-col gap-3"></div>
+
+                <div id="pagination" class="flex items-center justify-center gap-3 mt-8"></div>
+
+            </div>
         `;
 
         const list = document.getElementById("usersList");
@@ -25,44 +39,97 @@ export async function renderUsers(page = 1) {
         users.forEach(user => {
             const item = document.createElement("div");
             item.className = `
-                flex justify-between items-center p-3 bg-gray-100 dark:bg-gray-800
-                rounded shadow-sm text-gray-800 dark:text-gray-200
+                flex items-center justify-between
+                p-4 rounded-xl
+                border border-gray-200 dark:border-gray-700
+                bg-white dark:bg-gray-900
+                shadow-sm
+                hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-800
+                transition
             `;
+
             item.innerHTML = `
-<span>
-  ${user.name || "unnamed user"}
-  ${user.orcid
-    ? `<a href="https://orcid.org/${encodeURIComponent(user.orcid)}"class="fa-brands fa-orcid"></a>`
-    : ""}
-</span>
-                <span class="text-sm text-gray-500 dark:text-gray-400">${user.role || "N/A"}</span>
+                <div class="flex items-center gap-3">
+
+                    <div class="
+                        w-9 h-9 flex items-center justify-center
+                        rounded-full
+                        bg-gray-200 dark:bg-gray-700
+                        text-gray-600 dark:text-gray-300
+                        text-sm font-semibold
+                    ">
+                        ${(user.name || "U").charAt(0).toUpperCase()}
+                    </div>
+
+                    <div class="flex flex-col">
+                        <span class="font-medium text-gray-800 dark:text-gray-100">
+                            ${user.name || "Unnamed user"}
+                        </span>
+
+                        <div class="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+
+                            ${user.orcid
+                                ? `<a href="https://orcid.org/${encodeURIComponent(user.orcid)}"
+                                      class="flex items-center gap-1 text-green-600 hover:text-green-700"
+                                      target="_blank">
+                                        <i class="fa-brands fa-orcid"></i>
+                                        ORCID
+                                   </a>`
+                                : ""}
+
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                    <i class="fa-solid fa-user-gear mr-1"></i>
+                    ${user.role || "N/A"}
+                </div>
             `;
+
             list.appendChild(item);
         });
 
         const prevBtn = document.createElement("button");
-        prevBtn.textContent = "« Previous";
+        prevBtn.innerHTML = `<i class="fa-solid fa-chevron-left mr-1"></i>Previous`;
         prevBtn.disabled = !json.prev_page_url;
         prevBtn.className = `
-            px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600
-            disabled:opacity-50 disabled:cursor-not-allowed
+            flex items-center px-4 py-2 rounded-lg
+            bg-gray-200 dark:bg-gray-700
+            hover:bg-gray-300 dark:hover:bg-gray-600
+            text-gray-800 dark:text-gray-200
+            disabled:opacity-40 disabled:cursor-not-allowed
+            transition
         `;
         prevBtn.onclick = () => renderUsers(currentPage - 1);
         pagination.appendChild(prevBtn);
 
+        const pageIndicator = document.createElement("span");
+        pageIndicator.className = "px-3 text-sm text-gray-600 dark:text-gray-400";
+        pageIndicator.textContent = `Page ${currentPage} / ${lastPage}`;
+        pagination.appendChild(pageIndicator);
+
         const nextBtn = document.createElement("button");
-        nextBtn.textContent = "Next »";
+        nextBtn.innerHTML = `Next<i class="fa-solid fa-chevron-right ml-1"></i>`;
         nextBtn.disabled = !json.next_page_url;
         nextBtn.className = `
-            px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600
-            disabled:opacity-50 disabled:cursor-not-allowed
+            flex items-center px-4 py-2 rounded-lg
+            bg-gray-200 dark:bg-gray-700
+            hover:bg-gray-300 dark:hover:bg-gray-600
+            text-gray-800 dark:text-gray-200
+            disabled:opacity-40 disabled:cursor-not-allowed
+            transition
         `;
         nextBtn.onclick = () => renderUsers(currentPage + 1);
         pagination.appendChild(nextBtn);
 
     } catch (err) {
         app.innerHTML = `
-            <p class="text-red-600 dark:text-red-400">Failed to load users: ${err.message}</p>
+            <div class="flex items-center justify-center py-10 text-red-600 dark:text-red-400">
+                <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+                Failed to load users: ${err.message}
+            </div>
         `;
         console.error(err);
     }

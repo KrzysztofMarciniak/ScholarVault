@@ -1,15 +1,14 @@
 // logout.js
+import { getToken } from './get_token.js';
 export async function logout(render) {
-    const token = localStorage.getItem('api_token');
+    const token = getToken();
 
     if (token) {
         try {
-            // call logout endpoint to revoke token
             await axios.post('/api/v1/login/logout', null, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
         } catch (err) {
-            // log but continue clearing client state
             console.warn('Logout API call failed:', err.response?.data?.message || err.message);
         }
     }
