@@ -12,9 +12,9 @@ class Review extends Model
     use HasFactory;
 
     protected $fillable = [
-        'article_id',
-        'reviewer_id',
-        'comments',
+        "article_id",
+        "reviewer_id",
+        "comments",
     ];
 
     public function article()
@@ -24,6 +24,6 @@ class Review extends Model
 
     public function reviewer()
     {
-        return $this->belongsTo(User::class, 'reviewer_id');
+        return $this->belongsTo(User::class, "reviewer_id");
     }
 }

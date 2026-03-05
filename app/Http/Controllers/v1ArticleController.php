@@ -134,56 +134,56 @@ class v1ArticleController extends Controller
                     ],
                 ],
                 [
-    "method" => "GET",
-    "path" => "/api/v1/articles/assigned/{id}",
-    "description" => "View detailed information of a specific article assigned to the authenticated reviewer.",
-    "auth_required" => true,
-    "roles" => ["reviewer"],
-    "response_code" => 200,
-    "response_data" => [
-        "id" => "integer",
-        "title" => "string",
-        "abstract" => "string",
-        "filename" => "string",
-        "file_type" => "string",
-        "keywords" => "array of strings",
-        "doi" => "string|null",
-        "created_at" => "datetime",
-        "updated_at" => "datetime",
-        "status" => [
-            "id" => "integer",
-            "name" => "string"
-        ],
-        "authors" => [
-            [
-                "id" => "integer",
-                "name" => "string",
-                "email" => "string",
-                "role_id" => "integer",
-                "role_name" => "string",
-                "affiliation" => "string|null",
-                "bio" => "string|null",
-                "deactivated" => "boolean",
-                "orcid" => "string|null",
-                "is_primary" => "boolean"
-            ]
-        ],
-        "citations" => [
-            [
-                "id" => "integer",
-                "title" => "string",
-                "doi" => "string|null"
-            ]
-        ],
-        "cited_by" => [
-            [
-                "id" => "integer",
-                "title" => "string",
-                "doi" => "string|null"
-            ]
-        ]
-    ]
-],
+                    "method" => "GET",
+                    "path" => "/api/v1/articles/assigned/{id}",
+                    "description" => "View detailed information of a specific article assigned to the authenticated reviewer.",
+                    "auth_required" => true,
+                    "roles" => ["reviewer"],
+                    "response_code" => 200,
+                    "response_data" => [
+                        "id" => "integer",
+                        "title" => "string",
+                        "abstract" => "string",
+                        "filename" => "string",
+                        "file_type" => "string",
+                        "keywords" => "array of strings",
+                        "doi" => "string|null",
+                        "created_at" => "datetime",
+                        "updated_at" => "datetime",
+                        "status" => [
+                            "id" => "integer",
+                            "name" => "string",
+                        ],
+                        "authors" => [
+                            [
+                                "id" => "integer",
+                                "name" => "string",
+                                "email" => "string",
+                                "role_id" => "integer",
+                                "role_name" => "string",
+                                "affiliation" => "string|null",
+                                "bio" => "string|null",
+                                "deactivated" => "boolean",
+                                "orcid" => "string|null",
+                                "is_primary" => "boolean",
+                            ],
+                        ],
+                        "citations" => [
+                            [
+                                "id" => "integer",
+                                "title" => "string",
+                                "doi" => "string|null",
+                            ],
+                        ],
+                        "cited_by" => [
+                            [
+                                "id" => "integer",
+                                "title" => "string",
+                                "doi" => "string|null",
+                            ],
+                        ],
+                    ],
+                ],
                 [
                     "method" => "POST",
                     "path" => "/api/v1/articles/assigned/{id}/review",
@@ -529,38 +529,40 @@ class v1ArticleController extends Controller
 
         return response()->json($articles, 200);
     }
- /**
+
+    /**
      * View details of a specific article assigned to the authenticated reviewer.
      */
     public function assignedArticle(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
 
-        $article = Article::with(['authors', 'status', 'citations', 'citedBy'])
-            ->whereHas('reviewers', fn ($q) => $q->where('user_id', $user->id))
+        $article = Article::with(["authors", "status", "citations", "citedBy"])
+            ->whereHas("reviewers", fn($q) => $q->where("user_id", $user->id))
             ->find($id);
 
-        if (! $article) {
+        if (!$article) {
             return response()->json([
-                'message' => 'Article not found or not assigned to you.'
+                "message" => "Article not found or not assigned to you.",
             ], 404);
         }
 
-        $article->authors->transform(fn ($author) => [
-            'id' => $author->id,
-            'name' => $author->name,
-            'email' => $author->email,
-            'role_id' => $author->role_id,
-            'role_name' => $author->role?->name,
-            'affiliation' => $author->affiliation,
-            'bio' => $author->bio,
-            'deactivated' => (bool)$author->deactivated,
-            'orcid' => $author->orcid,
-            'is_primary' => (bool)$author->pivot->is_primary,
+        $article->authors->transform(fn($author) => [
+            "id" => $author->id,
+            "name" => $author->name,
+            "email" => $author->email,
+            "role_id" => $author->role_id,
+            "role_name" => $author->role?->name,
+            "affiliation" => $author->affiliation,
+            "bio" => $author->bio,
+            "deactivated" => (bool)$author->deactivated,
+            "orcid" => $author->orcid,
+            "is_primary" => (bool)$author->pivot->is_primary,
         ]);
 
         return response()->json($article);
     }
+
     /**
      * Submit review feedback for an assigned article.
      */
@@ -568,32 +570,32 @@ class v1ArticleController extends Controller
     {
         $user = $request->user();
 
-        $article = Article::with('reviewers')->findOrFail($id);
+        $article = Article::with("reviewers")->findOrFail($id);
 
         if (!$article->reviewers->contains($user->id)) {
             return response()->json([
-                'message' => 'You are not assigned to review this article.'
+                "message" => "You are not assigned to review this article.",
             ], 403);
         }
 
         $validated = $request->validate([
-            'recommendation' => 'required|string|in:accept,reject,revision_requested',
-            'comments' => 'required|string|max:5000',
+            "recommendation" => "required|string|in:accept,reject,revision_requested",
+            "comments" => "required|string|max:5000",
         ]);
 
         $review = Review::updateOrCreate(
             [
-                'article_id' => $article->id,
-                'reviewer_id' => $user->id,
+                "article_id" => $article->id,
+                "reviewer_id" => $user->id,
             ],
             [
-                'recommendation' => $validated['recommendation'],
-                'comments' => $validated['comments'],
-            ]
+                "recommendation" => $validated["recommendation"],
+                "comments" => $validated["comments"],
+            ],
         );
 
-      event(new ReviewSubmitted($review));
+        event(new ReviewSubmitted($review));
 
-        return response()->json($review->load('reviewer'), 200);
+        return response()->json($review->load("reviewer"), 200);
     }
 }

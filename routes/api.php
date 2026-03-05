@@ -42,9 +42,9 @@ Route::prefix("v1")->group(function (): void {
             // List assigned
             Route::get("/assigned", [v1ArticleController::class, "assignedArticles"]);
             // View assigned article
-            Route::get('/assigned/{id}', [v1ArticleController::class, 'assignedArticle']);
+            Route::get("/assigned/{id}", [v1ArticleController::class, "assignedArticle"]);
             // Submit review
-           Route::post('/assigned/{id}/review',[v1ArticleController::class, 'submitAssignedReview']);
+            Route::post("/assigned/{id}/review", [v1ArticleController::class, "submitAssignedReview"]);
         });
 
         // =========================
