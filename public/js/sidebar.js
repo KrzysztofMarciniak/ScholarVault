@@ -9,19 +9,41 @@ export function renderSidebar(renderCallbacks = {}) {
         sidebar.className = `
             fixed left-0 top-0 h-full w-56 bg-gray-100 dark:bg-gray-800
             shadow-lg p-4 flex flex-col gap-4 overflow-y-auto z-50
+            transition-all duration-300
         `;
         document.body.appendChild(sidebar);
+    }
+
+    // Inject minimal CSS for minimized state and focus behavior (only once)
+    if (!document.getElementById("sidebar-minimized-styles")) {
+        const style = document.createElement("style");
+        style.id = "sidebar-minimized-styles";
+        style.textContent = `
+            /* width control + hiding labels when minimized */
+            #sidebar.minimized { width: 4rem !important; }
+            #sidebar.minimized h2,
+            #sidebar.minimized .label { display: none !important; }
+
+            /* center icons when minimized */
+            #sidebar.minimized .btn-icon-only { justify-content: center; padding-left: 0.5rem; padding-right: 0.5rem; }
+
+            /* remove outline/box-shadow on focused buttons while minimized */
+            #sidebar.minimized button:focus,
+            #sidebar.minimized button:focus-visible {
+                outline: none !important;
+                box-shadow: none !important;
+            }
+
+            /* keep keyboard focus visible when expanded (no change) */
+        `;
+        document.head.appendChild(style);
     }
 
     sidebar.innerHTML = ""; // Clear previous content
 
     const user = JSON.parse(localStorage.getItem("current_user") || "null");
 
-    // If no user is logged in, hide the sidebar entirely
-    if (!user) {
-        sidebar.style.display = 'none';
-        return;
-    }
+
 
     // Show sidebar if user exists
     sidebar.style.display = 'flex';
@@ -35,58 +57,83 @@ export function renderSidebar(renderCallbacks = {}) {
 
     if (roles.includes("administrator")) {
         sections.push({
-            title: "Admin",
             buttons: [
-                { label: "Dashboard", onClick: renderCallbacks.adminDashboard },
-                { label: "Manage Users", onClick: renderCallbacks.adminUsers },
-                { label: "Manage Articles", onClick: renderCallbacks.adminArticles },
+                { label: "Dashboard", icon: "fa-solid fa-tachometer-alt", onClick: renderCallbacks.adminDashboard },
+                { label: "Manage Users", icon: "fa-solid fa-users", onClick: renderCallbacks.adminUsers },
+                { label: "Manage Articles", icon: "fa-solid fa-file-lines", onClick: renderCallbacks.adminArticles },
             ],
         });
     }
 
     if (roles.includes("author")) {
         sections.push({
-            title: "Author",
             buttons: [
-                { label: "My Articles", onClick: renderCallbacks.myArticles },
-                { label: "Submit Article", onClick: renderCallbacks.submitArticle },
+                { label: "My Articles", icon: "fa-solid fa-pencil", onClick: renderCallbacks.myArticles },
+                { label: "Submit Article", icon: "fa-solid fa-plus", onClick: renderCallbacks.submitArticle },
             ],
         });
     }
 
     if (roles.includes("reviewer")) {
         sections.push({
-            title: "Reviewer",
             buttons: [
-                { label: "Assigned Reviews", onClick: renderCallbacks.assignedReviews },
-                { label: "Review History", onClick: renderCallbacks.reviewHistory },
+                { label: "Assigned Reviews", icon: "fa-solid fa-tasks", onClick: renderCallbacks.assignedReviews },
+                { label: "Review History", icon: "fa-solid fa-history", onClick: renderCallbacks.reviewHistory },
             ],
         });
     }
+    sections.push({
+        buttons: [
+        { label: "Users", icon: "fa-solid fa-users", onClick: () => import('./all_users.js').then(mod => mod.renderUsers()) },
+        ]
+    });
+    let minimized = true;
+    sidebar.classList.add("minimized");
+
+    const toggleButton = document.createElement("button");
+    toggleButton.innerHTML = `<i class="fa-solid fa-chevron-right"></i>`;
+    toggleButton.className = `
+        self-end mb-2 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white
+        text-xl transition-colors duration-150
+    `;
+    toggleButton.onclick = () => {
+        minimized = !minimized;
+        sidebar.classList.toggle("minimized", minimized);
+        toggleButton.innerHTML = minimized
+            ? `<i class="fa-solid fa-chevron-right"></i>`
+            : `<i class="fa-solid fa-chevron-left"></i>`;
+    };
+    sidebar.appendChild(toggleButton);
 
     // Render sections
     sections.forEach(section => {
-        const sectionTitle = document.createElement("h2");
-        sectionTitle.className = "text-lg font-bold mb-2 text-gray-700 dark:text-gray-200";
-        sectionTitle.textContent = section.title;
-        sidebar.appendChild(sectionTitle);
-
         const container = document.createElement("div");
         container.className = "flex flex-col gap-2";
 
         section.buttons.forEach(btn => {
             const button = document.createElement("button");
             button.type = "button";
-            button.textContent = btn.label;
+            // add a specific class so centering when minimized is simple
             button.className = `
-                bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600
-                text-gray-800 dark:text-gray-100 font-medium py-1 px-3 rounded
-                transition-colors duration-150
+                flex items-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600
+                text-gray-800 dark:text-gray-100 font-medium py-1 px-3 rounded transition-colors duration-150
             `;
+            // add additional class used by CSS when minimized
+            button.classList.add("btn-icon-only");
 
             button.onclick = () => {
                 if (typeof btn.onClick === "function") btn.onClick();
             };
+
+            const icon = document.createElement("i");
+            icon.className = btn.icon + " text-lg";
+
+            const label = document.createElement("span");
+            label.className = "label";
+            label.textContent = btn.label;
+
+            button.appendChild(icon);
+            button.appendChild(label);
 
             container.appendChild(button);
         });

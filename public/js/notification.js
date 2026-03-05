@@ -1,20 +1,15 @@
 let container = null;
 
 function ensureContainer() {
-
     if (container) return;
 
     container = document.createElement("div");
     container.id = "notifications";
-
-    container.className =
-        "fixed top-4 right-4 z-50 w-80 space-y-2";
-
+    container.className = "fixed top-4 right-4 z-50 w-80 space-y-2";
     document.body.appendChild(container);
 }
 
 function create(message, type = "info", timeout = 4000) {
-
     ensureContainer();
 
     const note = document.createElement("div");
@@ -23,23 +18,24 @@ function create(message, type = "info", timeout = 4000) {
         "flex items-start gap-3 rounded-lg border p-4 shadow-lg transition-opacity";
 
     const styles = {
-        success:
-            "bg-green-50 border-green-400 text-green-800",
+        success: "bg-green-50 border-green-400 text-green-800",
+        error: "bg-red-50 border-red-400 text-red-800",
+        info: "bg-gray-50 border-gray-300 text-gray-800"
+    };
 
-        error:
-            "bg-red-50 border-red-400 text-red-800",
-
-        info:
-            "bg-gray-50 border-gray-300 text-gray-800"
+    const icons = {
+        success: "fa-solid fa-circle-check",
+        error: "fa-solid fa-circle-xmark",
+        info: "fa-solid fa-circle-info"
     };
 
     note.className = `${base} ${styles[type] || styles.info}`;
 
     note.innerHTML = `
+        <i class="${icons[type] || icons.info} mt-1 text-lg"></i>
         <span class="flex-1 text-sm font-medium">
             ${message}
         </span>
-
         <button class="ml-2 text-xl leading-none opacity-60 hover:opacity-100">
             &times;
         </button>

@@ -11,6 +11,13 @@
 
     <!-- SPA JS -->
     <script type="module" src="/js/spa.js"></script>
+
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+/>
     <link rel="stylesheet" href="/css/style.css">
     <meta name="color-scheme" content="light dark">
 </head>
@@ -19,11 +26,11 @@
     <nav id="navbar"></nav>
     </header>
 
-    <main id="app">
+    <main id="app" class="container mx-auto px-4 md:px-8">
         <!-- SPA content will be injected here -->
     </main>
 
-    <footer>
+    <footer class="fixed bottom-0 left-0 right-0 text-center">
         <p>&copy; {{ date('Y') }} ScholarVault. All rights reserved.</p>
     </footer>
 </body>

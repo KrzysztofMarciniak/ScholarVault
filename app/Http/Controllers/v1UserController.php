@@ -208,17 +208,28 @@ class v1UserController extends v1Controller
         ], 201);
     }
 
-    // List (paginated) active users
-    public function index(Request $request): JsonResponse
-    {
-        $perPage = min((int)$request->query("per_page", 15), 100);
+    // List (paginated) active users with selected fields
+public function index(Request $request): JsonResponse
+{
+    $perPage = min((int)$request->query('per_page', 15), 100);
 
-        $users = User::where("deactivated", false)
-            ->with("role")
-            ->paginate($perPage);
+    $users = User::query()
+        ->where('deactivated', 0)
+        ->with(['role:id,name'])
+        ->select('id', 'name', 'orcid', 'role_id')
+        ->paginate($perPage);
 
-        return response()->json($users);
-    }
+    $users->getCollection()->transform(function ($user) {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'orcid' => $user->orcid,
+            'role' => $user->role?->name ?? null,
+        ];
+    });
+
+    return response()->json($users);
+}
 
     // Admin partial update (PATCH semantics)
     public function update(Request $request, int $id): JsonResponse
