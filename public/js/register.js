@@ -23,10 +23,17 @@ export function renderRegisterForm(render) {
 
         resetFormErrors(form, errorBox);
 
-        const payload = {};
-        for (const field of form.elements) {
-            if (field.name) payload[field.name] = field.value;
-        }
+       const payload = {};
+
+for (const field of form.elements) {
+    if (!field.name) continue;
+
+    const value = field.value.trim();
+
+    if (value === "") continue;
+
+    payload[field.name] = value;
+}
 
         try {
             const res = await axios.post("/api/v1/register", payload);

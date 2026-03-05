@@ -41,31 +41,31 @@ class v1RegisterController extends Controller
     }
 
     public function register(Request $request): JsonResponse
-{
-    $data = $request->validate([
-        "name" => ["required", "string", "max:255"],
-        "email" => ["required", "email", "unique:users,email"],
-        "password" => ["required", "string", "min:8"],
-        "affiliation" => ["sometimes", "string", "max:255"],
-        "orcid" => ["sometimes", "string", "max:32"],
-        "bio" => ["sometimes", "string"],
-    ]);
+    {
+        $data = $request->validate([
+            "name" => ["required", "string", "max:255"],
+            "email" => ["required", "email", "unique:users,email"],
+            "password" => ["required", "string", "min:8"],
+            "affiliation" => ["sometimes", "string", "max:255"],
+            "orcid" => ["sometimes", "string", "max:32"],
+            "bio" => ["sometimes", "string"],
+        ]);
 
-    $data["password"] = Hash::make($data["password"]);
-    $data["role_id"] = Role::AUTHOR;
+        $data["password"] = Hash::make($data["password"]);
+        $data["role_id"] = Role::AUTHOR;
 
-    $user = User::create($data);
+        $user = User::create($data);
 
-    $token = $user->createToken("api-token")->plainTextToken;
+        $token = $user->createToken("api-token")->plainTextToken;
 
-    return response()->json([
-        "token" => $token,
-        "user" => [
-            "id" => $user->id,
-            "name" => $user->name,
-            "email" => $user->email,
-            "role" => $user->role->name,
-        ],
-    ]);
-}
+        return response()->json([
+            "token" => $token,
+            "user" => [
+                "id" => $user->id,
+                "name" => $user->name,
+                "email" => $user->email,
+                "role" => $user->role->name,
+            ],
+        ]);
+    }
 }

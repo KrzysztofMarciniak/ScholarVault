@@ -3,12 +3,12 @@ import { renderLoginForm } from './login.js';
 import { renderRegisterForm } from './register.js';
 import { logout } from './logout.js';
 import { initThemeSwitcher } from './theme.js';
-import { initHamburger } from './hamburger.js';
-import { renderSidebar } from './sidebar.js'; // <-- ADDED THIS IMPORT
+import { initUserMenu } from './user_menu.js';
+import { renderSidebar } from './sidebar.js';
 
 const app = document.getElementById("app");
 
-initHamburger();
+initUserMenu();
 
 function getAuth() {
     const token = localStorage.getItem("api_token");

@@ -64,21 +64,6 @@ class v1UserController extends v1Controller
                     "response_data" => "Paginated search results",
                 ],
                 [
-                    "method" => "GET",
-                    "path" => "/api/v1/users/search?admin=1",
-                    "description" => "Search users with extra admin information (admin only)",
-                    "auth_required" => true,
-                    "admin_only" => true,
-                    "query_params" => [
-                        "q" => "string|required|min:2",
-                        "per_page" => "integer (max 100, default 15)",
-                        "admin" => "flag to include extra info",
-                    ],
-                    "extra_fields" => ["created_at", "updated_at", "deactivated"],
-                    "response_code" => 200,
-                    "response_data" => "Results with admin fields",
-                ],
-                [
                     "method" => "PUT",
                     "path" => "/api/v1/users/self",
                     "description" => "Update your own profile (authenticated users)",
@@ -209,27 +194,25 @@ class v1UserController extends v1Controller
     }
 
     // List (paginated) active users with selected fields
-public function index(Request $request): JsonResponse
-{
-    $perPage = min((int)$request->query('per_page', 15), 100);
+    public function index(Request $request): JsonResponse
+    {
+        $perPage = min((int)$request->query("per_page", 15), 100);
 
-    $users = User::query()
-        ->where('deactivated', 0)
-        ->with(['role:id,name'])
-        ->select('id', 'name', 'orcid', 'role_id')
-        ->paginate($perPage);
+        $users = User::query()
+            ->where("deactivated", 0)
+            ->with(["role:id,name"])
+            ->select("id", "name", "orcid", "role_id")
+            ->paginate($perPage);
 
-    $users->getCollection()->transform(function ($user) {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'orcid' => $user->orcid,
-            'role' => $user->role?->name ?? null,
-        ];
-    });
+        $users->getCollection()->transform(fn($user) => [
+            "id" => $user->id,
+            "name" => $user->name,
+            "orcid" => $user->orcid,
+            "role" => $user->role?->name ?? null,
+        ]);
 
-    return response()->json($users);
-}
+        return response()->json($users);
+    }
 
     // Admin partial update (PATCH semantics)
     public function update(Request $request, int $id): JsonResponse
@@ -346,7 +329,6 @@ public function index(Request $request): JsonResponse
         ]);
     }
 
-    // Search (paginated)
     public function search(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -355,24 +337,44 @@ public function index(Request $request): JsonResponse
 
         $query = $data["q"];
         $perPage = min((int)$request->query("per_page", 15), 100);
-        $isAdmin = $request->query("admin") !== null
-            && $request->user()?->role_id === Role::ADMINISTRATOR;
-        $users = User::where("deactivated", false)
+
+        $isAdmin = $request->user('sanctum')?->isAdmin() ?? false;
+
+        $usersQuery = User::query()
             ->where(function ($qBuilder) use ($query): void {
                 $qBuilder->where("name", "like", "%{$query}%")
                     ->orWhere("email", "like", "%{$query}%")
                     ->orWhere("affiliation", "like", "%{$query}%");
-            })
-            ->with("role")
-            ->paginate($perPage);
+            });
+
+        if (!$isAdmin) {
+            $usersQuery->where("deactivated", false);
+        }
 
         if ($isAdmin) {
-            $users->getCollection()->transform(fn($user) => array_merge($user->toArray(), [
-                "created_at" => $user->created_at,
-                "updated_at" => $user->updated_at,
-                "deactivated" => $user->deactivated,
-            ]));
+            $usersQuery->with("role");
         }
+
+        $users = $usersQuery->paginate($perPage);
+
+        $users->getCollection()->transform(function ($user) use ($isAdmin) {
+            if ($isAdmin) {
+                return [
+                    "id" => $user->id,
+                    "name" => $user->name,
+                    "email" => $user->email,
+                    "orcid" => $user->orcid,
+                    "role" => $user->role?->name,
+                    "deactivated" => $user->deactivated,
+                ];
+            }
+
+            return [
+                "id" => $user->id,
+                "name" => $user->name,
+                "orcid" => $user->orcid,
+            ];
+        });
 
         return response()->json($users);
     }

@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class FormatOrcid
 {
@@ -24,8 +26,8 @@ class FormatOrcid
     private function formatOrcidRecursive(array $data): array
     {
         foreach ($data as $key => $value) {
-            if ($key === 'orcid' && is_string($value) && strlen($value) === 16) {
-                $data[$key] = preg_replace('/(\d{4})(?=\d)/', '$1-', $value);
+            if ($key === "orcid" && is_string($value) && strlen($value) === 16) {
+                $data[$key] = preg_replace('/(\d{4})(?=\d)/', "$1-", $value);
             } elseif (is_array($value)) {
                 $data[$key] = $this->formatOrcidRecursive($value);
             }

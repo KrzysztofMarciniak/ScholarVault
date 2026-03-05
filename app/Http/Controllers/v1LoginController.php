@@ -47,26 +47,27 @@ class v1LoginController extends Controller
             ], 401);
         }
 
-        $user = $request->user()->load('role');
+        $user = $request->user()->load("role");
 
-    if ($user->deactivated) {
-        Auth::logout();
-        return response()->json([
-            "message" => "User account is deactivated",
-        ], 403);
-    }
+        if ($user->deactivated) {
+            Auth::logout();
+
+            return response()->json([
+                "message" => "User account is deactivated",
+            ], 403);
+        }
 
         $token = $user->createToken("api-token")->plainTextToken;
 
-          return response()->json([
-        "token" => $token,
-        "user" => [
-            "id" => $user->id,
-            "name" => $user->name,
-            "email" => $user->email,
-            "role" => $user->role?->name,
-        ],
-    ]);
+        return response()->json([
+            "token" => $token,
+            "user" => [
+                "id" => $user->id,
+                "name" => $user->name,
+                "email" => $user->email,
+                "role" => $user->role?->name,
+            ],
+        ]);
     }
 
     public function logout(Request $request)

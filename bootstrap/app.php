@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\FormatOrcid;
 use App\Http\Middleware\RolesRequired;
 use App\Http\Middleware\SanitizeWithSanitizer;
-use App\Http\Middleware\FormatOrcid;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;

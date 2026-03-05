@@ -33,28 +33,66 @@ export function renderSidebar(renderCallbacks = {}) {
                 outline: none !important;
                 box-shadow: none !important;
             }
-
-            /* keep keyboard focus visible when expanded (no change) */
         `;
         document.head.appendChild(style);
     }
 
     sidebar.innerHTML = ""; // Clear previous content
 
-    const user = JSON.parse(localStorage.getItem("current_user") || "null");
+    // --- Safe user parsing ---
+    const userRaw = localStorage.getItem("current_user");
+    let user = null;
+    try {
+        user = userRaw ? JSON.parse(userRaw) : null;
+    } catch (e) {
+        user = null; // malformed -> treat as logged off
+    }
 
+    // Build roles safely (always an array of lowercase strings)
+    const roles = [];
+    if (user && user.role) {
+        if (Array.isArray(user.role)) {
+            user.role.forEach(r => { if (r != null) roles.push(String(r).toLowerCase()); });
+        } else {
+            roles.push(String(user.role).toLowerCase());
+        }
+    }
 
-
-    // Show sidebar if user exists
-    sidebar.style.display = 'flex';
-
-    // Safely handle role whether it's a string or an array
-    const roles = Array.isArray(user.role)
-        ? user.role.map(r => r.toLowerCase())
-        : [(user.role || "").toLowerCase()];
+    // Ensure minimized default state is applied immediately
+    let minimized = true;
+    sidebar.classList.add("minimized");
 
     const sections = [];
 
+    // Common section for everybody (always pushed)
+    const commonSection = {
+        buttons: [
+            {
+                label: "Users",
+                icon: "fa-solid fa-users",
+                onClick: () => import('./all_users.js').then(mod => mod.renderUsers())
+            },
+            {
+                label: "Search Users",
+                icon: "fa-solid fa-magnifying-glass",
+                onClick: () => {
+                    import('./search_user.js').then(mod => {
+                        const query = prompt("Enter search query (min 2 chars):");
+                        if (!query || query.length < 2) return alert("Query too short");
+                        const container = document.getElementById("app");
+                        if (container) {
+                            mod.renderSearchResults(container, query);
+                        }
+                    });
+                }
+            }
+        ]
+    };
+
+    // Add the common section first so it's always visible
+    sections.push(commonSection);
+
+    // Role-based sections
     if (roles.includes("administrator")) {
         sections.push({
             buttons: [
@@ -82,20 +120,15 @@ export function renderSidebar(renderCallbacks = {}) {
             ],
         });
     }
-    sections.push({
-        buttons: [
-        { label: "Users", icon: "fa-solid fa-users", onClick: () => import('./all_users.js').then(mod => mod.renderUsers()) },
-        ]
-    });
-    let minimized = true;
-    sidebar.classList.add("minimized");
 
+    // Toggle button (keeps minimized initial state)
     const toggleButton = document.createElement("button");
     toggleButton.innerHTML = `<i class="fa-solid fa-chevron-right"></i>`;
     toggleButton.className = `
         self-end mb-2 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white
         text-xl transition-colors duration-150
     `;
+    toggleButton.setAttribute("aria-label", "Toggle sidebar");
     toggleButton.onclick = () => {
         minimized = !minimized;
         sidebar.classList.toggle("minimized", minimized);
@@ -113,12 +146,10 @@ export function renderSidebar(renderCallbacks = {}) {
         section.buttons.forEach(btn => {
             const button = document.createElement("button");
             button.type = "button";
-            // add a specific class so centering when minimized is simple
             button.className = `
                 flex items-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600
                 text-gray-800 dark:text-gray-100 font-medium py-1 px-3 rounded transition-colors duration-150
             `;
-            // add additional class used by CSS when minimized
             button.classList.add("btn-icon-only");
 
             button.onclick = () => {
