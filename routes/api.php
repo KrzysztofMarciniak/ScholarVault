@@ -102,8 +102,8 @@ Route::prefix("v1")->group(function (): void {
         // Search endpoint
         Route::get("/search", [v1UserController::class, "search"]);
 
-        //display users info
-        Route::get('/show/{id}', [v1UserController::class, 'show']);
+        // display users info
+        Route::get("/show/{id}", [v1UserController::class, "show"]);
 
         // Protected routes (require authentication)
         Route::middleware("auth:sanctum")->group(function (): void {
@@ -117,7 +117,7 @@ Route::prefix("v1")->group(function (): void {
             Route::delete("self", [v1UserController::class, "deleteSelf"]);
 
             // Display own info
-            Route::get('/me', [v1UserController::class, 'me']);
+            Route::get("/me", [v1UserController::class, "me"]);
         });
 
         // Admin routes

@@ -1,27 +1,88 @@
-<p>
- <h1>Made with 
-  <a href="https://laravel.com/docs/12.x/releases">Laravel 12</a>
-  <img src="readme_logos/laravel_logo.png" alt="Laravel Logo" width="50" />, 
-  on <a href="https://www.openbsd.org/">OpenBSD</a>
-  <img src="readme_logos/openbsd_logo.svg" alt="OpenBSD Logo" width="50" /> 
-  with <a href="https://github.com/doomemacs/doomemacs">Doom Emacs</a>
-  <img src="readme_logos/doom_emacs_logo.png" alt="Doom Emacs Logo" width="50" />
-  </h1>
-</p>
+# Project
+Scientific publishing web engine built with Laravel.
+---
+## Stack
+Built with:
+- **Laravel 12**  
+  https://laravel.com/docs/12.x/releases  
+  <img src="readme_logos/laravel_logo.png" alt="Laravel Logo" width="50"/>
+- **OpenBSD**  
+  https://www.openbsd.org/  
+  <img src="readme_logos/openbsd_logo.svg" alt="OpenBSD Logo" width="50"/>
+- **Doom Emacs**  
+  https://github.com/doomemacs/doomemacs  
+  <img src="readme_logos/doom_emacs_logo.png" alt="Doom Emacs Logo" width="50"/>
+---
+## API Conventions
+API version `v1` exposes a **built-in help endpoint for every route**.
+### Pattern
 
-api v1 always has help endpoint.
-ex:
-
-to get help about:
+```
+GET /api/v1/{endpoint}/help
+```
+To obtain documentation for:
 /api/v1/test
-just use GET on
-/api/v1/test/help
+```
+GET /api/v1/test/help
+```
 
-testing requests with shell and curl in 'post office' directory.
+The endpoint returns JSON describing:
 
-Global Middleware Sanitization
-https://github.com/blumilksoftware/codestyle
+- method
+- parameters
+- authentication requirements
+- description
 
-https://github.com/elegantweb/sanitizer
-Seeders work.
 
+## Libraries used:
+
+[blumilksoftware/codestyle](https://github.com/blumilksoftware/codestyle)
+[elegantweb/sanitizer](https://github.com/elegantweb/sanitizer)
+
+### dev
+
+``` sh
+chmod +x;
+./start.sh
+```
+
+### Screenshots:
+---
+
+# Interface
+
+## Main Interface
+
+![Main Interface](screenshots/main.png)
+
+---
+
+## Users
+
+User listing view.
+
+![Users](screenshots/users.png)
+
+---
+
+## User Search
+
+Search interface for locating users.
+
+![Search Users](screenshots/search_users.png)
+
+---
+
+## Admin User Management
+
+Administrative panel for managing users.
+
+Capabilities include:
+
+- updating user information
+- role management
+- account deactivation
+
+![Admin Manage Users](screenshots/admin_manage_users.png)
+
+---

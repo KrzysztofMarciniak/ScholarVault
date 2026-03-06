@@ -1,4 +1,3 @@
-// main.js (or app.js)
 import { getCurrentUser, setCurrentUser, updateUserMenu } from './user_store.js';
 import { renderLoginForm } from './login.js';
 import { renderRegisterForm } from './register.js';
@@ -20,7 +19,7 @@ function getAuth() {
 }
 
 function ensureAxiosHeader(token) {
-    if (typeof axios !== 'undefined') { // Safety check just in case
+    if (typeof axios !== 'undefined') {
         if (token) {
             axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         } else {
@@ -133,10 +132,9 @@ export function render() {
     content.id = "content";
     content.style.padding = "1rem";
 
-    // Add margin to content if sidebar is fixed, so they don't overlap
     const { user } = getAuth();
     if (user) {
-        content.classList.add("ml-56"); // Assuming Tailwind: leaves room for your 56-width sidebar
+        content.classList.add("ml-56");
     }
 
     app.appendChild(content);

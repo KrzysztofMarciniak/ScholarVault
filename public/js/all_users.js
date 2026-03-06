@@ -37,59 +37,45 @@ export async function renderUsers(page = 1) {
         const pagination = document.getElementById("pagination");
 
         users.forEach(user => {
-            const item = document.createElement("div");
-            item.className = `
-                flex items-center justify-between
-                p-4 rounded-xl
-                border border-gray-200 dark:border-gray-700
-                bg-white dark:bg-gray-900
-                shadow-sm
-                hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-800
-                transition
-            `;
+    const item = document.createElement("div");
+    item.className = "flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-800 transition";
 
-            item.innerHTML = `
-                <div class="flex items-center gap-3">
-
-                    <div class="
-                        w-9 h-9 flex items-center justify-center
-                        rounded-full
-                        bg-gray-200 dark:bg-gray-700
-                        text-gray-600 dark:text-gray-300
-                        text-sm font-semibold
-                    ">
-                        ${(user.name || "U").charAt(0).toUpperCase()}
-                    </div>
-
-                    <div class="flex flex-col">
-                        <span class="font-medium text-gray-800 dark:text-gray-100">
-                            ${user.name || "Unnamed user"}
-                        </span>
-
-                        <div class="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-
-                            ${user.orcid
-                                ? `<a href="https://orcid.org/${encodeURIComponent(user.orcid)}"
-                                      class="flex items-center gap-1 text-green-600 hover:text-green-700"
-                                      target="_blank">
-                                        <i class="fa-brands fa-orcid"></i>
-                                        ORCID
-                                   </a>`
-                                : ""}
-
-                        </div>
-                    </div>
-
+    item.innerHTML = `
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-semibold">
+                ${(user.name || "U").charAt(0).toUpperCase()}
+            </div>
+            <div class="flex flex-col">
+                <span class="font-medium text-gray-800 dark:text-gray-100 cursor-pointer user-id" data-id="${user.id}">
+                    ${user.name || "Unnamed user"}
+                </span>
+                <div class="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                    ${user.orcid
+                        ? `<a href="https://orcid.org/${encodeURIComponent(user.orcid)}"
+                              class="flex items-center gap-1 text-green-600 hover:text-green-700"
+                              target="_blank">
+                                <i class="fa-brands fa-orcid"></i>
+                                ORCID
+                           </a>`
+                        : ""}
                 </div>
+            </div>
+        </div>
+        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+            <i class="fa-solid fa-user-gear mr-1"></i>
+            ${user.role || "N/A"}
+        </div>
+    `;
 
-                <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    <i class="fa-solid fa-user-gear mr-1"></i>
-                    ${user.role || "N/A"}
-                </div>
-            `;
+    list.appendChild(item);
+});
 
-            list.appendChild(item);
-        });
+document.querySelectorAll(".user-id").forEach(el => {
+    el.onclick = (e) => {
+        const id = e.currentTarget.dataset.id;
+        import("./user_info.js").then(module => module.showUser(id));
+    };
+});
 
         const prevBtn = document.createElement("button");
         prevBtn.innerHTML = `<i class="fa-solid fa-chevron-left mr-1"></i>Previous`;

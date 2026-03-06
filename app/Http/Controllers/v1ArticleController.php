@@ -20,6 +20,105 @@ class v1ArticleController extends Controller
         return response()->json([
             "version" => "v1",
             "endpoints" => [
+                [// implement
+                    "method" => "GET",
+                    "path" => "/api/v1/articles/{id}",
+                    "description" => "Retrieve detailed information about a specific published article",
+                    "auth_required" => false,
+                    "path_params" => [
+                        "id" => "integer|required|article id",
+                    ],
+                    "response_code" => 200,
+                    "response_data" => [
+                        "id" => "integer",
+                        "title" => "string",
+                        "abstract" => "string",
+                        "doi" => "string|null",
+                        "keywords" => "array",
+                        "file_type" => "string",
+                        "filename" => "string",
+                        "status" => [
+                            "id" => "integer",
+                            "name" => "string",
+                        ],
+                        "created_at" => "datetime",
+                        "updated_at" => "datetime",
+                        "authors" => [
+                            [
+                                "id" => "integer",
+                                "name" => "string",
+                                "orcid" => "string|null",
+                                "is_primary" => "boolean",
+                            ],
+                        ],
+                        "reviewers" => [
+                            [
+                                "id" => "integer",
+                                "name" => "string",
+                                "orcid" => "string|null",
+                            ],
+                        ],
+                        "citations" => [
+                            [
+                                "id" => "integer",
+                                "title" => "string",
+                                "doi" => "string|null",
+                            ],
+                        ],
+                        "cited_by" => [
+                            [
+                                "id" => "integer",
+                                "title" => "string",
+                                "doi" => "string|null",
+                            ],
+                        ],
+                        "citations_count" => "integer",
+                        "cited_by_count" => "integer",
+                    ],
+                ],
+
+                [ // implement
+                    "method" => "GET",
+                    "path" => "/api/v1/articles",
+                    "description" => "Retrieve paginated list of published articles",
+                    "auth_required" => false,
+                    "query_params" => [
+                        "page" => "integer|optional|default:1",
+                        "per_page" => "integer|optional|max:25|default:15",
+                        "search" => "string|optional|search in title and abstract",
+                        "keyword" => "string|optional|filter by keyword",
+                        "author_id" => "integer|optional|filter by author",
+                        "sort" => "string|optional|values: newest, oldest",
+                    ],
+                    "response_code" => 200,
+                    "response_data" => [
+                        "current_page" => "integer",
+                        "per_page" => "integer",
+                        "total" => "integer",
+                        "last_page" => "integer",
+                        "data" => [
+                            [
+                                "id" => "integer",
+                                "title" => "string",
+                                "abstract" => "string",
+                                "doi" => "string|null",
+                                "keywords" => "array",
+                                "file_type" => "string",
+                                "created_at" => "datetime",
+                                "authors" => [
+                                    [
+                                        "id" => "integer",
+                                        "name" => "string",
+                                        "orcid" => "string|null",
+                                        "is_primary" => "boolean",
+                                    ],
+                                ],
+                                "citations_count" => "integer",
+                            ],
+                        ],
+                    ],
+                ],
+
                 // === AUTHOR ENDPOINTS ===
                 [
                     "method" => "POST",
@@ -36,6 +135,7 @@ class v1ArticleController extends Controller
                     "response_code" => 201,
                     "response_data" => "Article object",
                 ],
+
                 [
                     "method" => "GET",
                     "path" => "/api/v1/articles/my",
@@ -94,7 +194,8 @@ class v1ArticleController extends Controller
                         ],
                     ],
                 ],
-                [// implement
+
+                [ // implement
                     "method" => "POST",
                     "path" => "/api/v1/articles/my/{id}/revision",
                     "description" => "Submit revision after reviewer feedback",
@@ -107,7 +208,8 @@ class v1ArticleController extends Controller
                     "response_code" => 200,
                     "response_data" => "Article object",
                 ],
-                [// implement
+
+                [ // implement
                     "method" => "GET",
                     "path" => "/api/v1/articles/my/{id}/comments",
                     "description" => "View reviewer comments",
@@ -133,6 +235,7 @@ class v1ArticleController extends Controller
                         "data" => "array of Article objects with authors, status, citations, and cited_by",
                     ],
                 ],
+
                 [
                     "method" => "GET",
                     "path" => "/api/v1/articles/assigned/{id}",
@@ -184,6 +287,7 @@ class v1ArticleController extends Controller
                         ],
                     ],
                 ],
+
                 [
                     "method" => "POST",
                     "path" => "/api/v1/articles/assigned/{id}/review",
@@ -267,7 +371,8 @@ class v1ArticleController extends Controller
                     "response_code" => 200,
                     "response_data" => "Updated Article resource with reviewers",
                 ],
-                [// implement
+
+                [ // implement
                     "method" => "PATCH",
                     "path" => "/api/v1/articles/{id}/decision",
                     "description" => "Make final decision on an article",
@@ -279,7 +384,8 @@ class v1ArticleController extends Controller
                     "response_code" => 200,
                     "response_data" => "Article object",
                 ],
-                [// implement
+
+                [ // implement
                     "method" => "PATCH",
                     "path" => "/api/v1/articles/{id}/publish",
                     "description" => "Publish an accepted article",

@@ -57,61 +57,56 @@ export async function renderSearchResults(container, query) {
       container.innerHTML = "<p>No users found.</p>";
       return;
     }
-container.innerHTML = results.data.map(user => {
-  const rolePart = user.role ? ` - Role: ${user.role}` : "";
-  const deactivatedPart = user.deactivated ? " (Deactivated)" : "";
-  const emailPart = user.email ? ` (${user.email})` : "";
 
-return `
+    container.innerHTML = results.data.map(user => {
+      const rolePart = user.role ? ` - Role: ${user.role}` : "";
+      const deactivatedPart = user.deactivated ? " (Deactivated)" : "";
+      const emailPart = user.email ? ` (${user.email})` : "";
+
+      return `
 <div class="flex items-center justify-between p-3 mb-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
 
   <div class="flex items-center gap-3">
+    <span class="text-xs font-mono text-gray-500">#${user.id}</span>
 
-    <span class="text-xs font-mono text-gray-500">
-      #${user.id}
-    </span>
+    <div class="flex flex-col">
+      <div class="flex items-center gap-2">
+        <span class="font-medium text-gray-800 dark:text-gray-100">
+          ${user.name || "Unnamed user"}
+        </span>
 
-    <span class="font-medium text-gray-800 dark:text-gray-100">
-      ${user.name || "Unnamed user"}
-    </span>
+        ${emailPart ? `<span class="text-sm text-gray-500"><i class="fa-solid fa-envelope mr-1"></i>${emailPart}</span>` : ""}
+      </div>
 
-    ${emailPart
-      ? `<span class="text-sm text-gray-500">
-          <i class="fa-solid fa-envelope mr-1"></i>${emailPart}
-        </span>`
-      : ""
-    }
-
-    ${user.orcid
-      ? `<a
-          href="https://orcid.org/${encodeURIComponent(user.orcid)}"
-          target="_blank"
-          class="text-green-600 hover:text-green-700 text-lg"
-          title="ORCID profile">
-          <i class="fa-brands fa-orcid"></i>
-        </a>`
-      : ""}
+      <div class="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mt-1">
+        ${user.orcid ? `<a href="https://orcid.org/${encodeURIComponent(user.orcid)}" class="flex items-center gap-1 text-green-600 hover:text-green-700" target="_blank"><i class="fa-brands fa-orcid"></i> ORCID</a>` : ""}
+      </div>
+    </div>
   </div>
 
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-3">
+    ${rolePart ? `<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"><i class="fa-solid fa-user-shield mr-1"></i>${rolePart}</span>` : ""}
+    ${deactivatedPart ? `<span class="px-2 py-1 text-xs rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"><i class="fa-solid fa-user-slash mr-1"></i>Deactivated</span>` : ""}
 
-    ${rolePart
-      ? `<span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-          <i class="fa-solid fa-user-shield mr-1"></i>${rolePart}
-        </span>`
-      : ""}
-
-    ${deactivatedPart
-      ? `<span class="px-2 py-1 text-xs rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
-          <i class="fa-solid fa-user-slash mr-1"></i>Deactivated
-        </span>`
-      : ""}
-
+    <button data-id="${user.id}" class="user-show-btn px-3 py-1 text-sm rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+      <i class="fa-solid fa-eye mr-1"></i>Show
+    </button>
   </div>
 
 </div>
 `;
-}).join("");
+    }).join("");
+
+    // attach click handlers for Show buttons
+    container.querySelectorAll(".user-show-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const id = e.currentTarget.dataset.id;
+        import("./user_info.js").then(module => module.showUser(id)).catch(err => {
+          console.error("Failed to load user_info module:", err);
+        });
+      });
+    });
+
   } catch (err) {
     container.innerHTML = `<p>Error: ${err.message}</p>`;
   }

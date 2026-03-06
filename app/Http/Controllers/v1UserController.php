@@ -79,44 +79,44 @@ class v1UserController extends v1Controller
                     "response_code" => 200,
                     "response_data" => "Updated user object",
                 ],
-[
-    "method" => "GET",
-    "path" => "/api/v1/users/{id}",
-    "description" => "Retrieve a specific user's full information",
-    "auth_required" => true,
-    "admin_only" => true,
-    "path_params" => [
-        "id" => "integer (user ID)"
-    ],
-    "response_code" => 200,
-    "response_data" => [
-        "id" => "integer",
-        "name" => "string",
-        "email" => "string",
-        "role" => "string",
-        "affiliation" => "string|null",
-        "orcid" => "string|null",
-        "bio" => "string|null",
-    ],
-],
-[// implement this
-    "method" => "GET",
-    "path" => "/api/v1/users/me",
-    "description" => "Retrieve current authenticated user's information",
-    "auth_required" => true,
-    "admin_only" => false,
-    "response_code" => 200,
-    "response_data" => [
-        "id" => "integer",
-        "name" => "string",
-        "email" => "string",
-        "role" => "string",
-        "affiliation" => "string|null",
-        "orcid" => "string|null",
-        "bio" => "string|null",
-    ],
-],
-                [// implement this
+                [
+                    "method" => "GET",
+                    "path" => "/api/v1/users/{id}",
+                    "description" => "Retrieve a specific user's full information",
+                    "auth_required" => true,
+                    "admin_only" => true,
+                    "path_params" => [
+                        "id" => "integer (user ID)",
+                    ],
+                    "response_code" => 200,
+                    "response_data" => [
+                        "id" => "integer",
+                        "name" => "string",
+                        "email" => "string",
+                        "role" => "string",
+                        "affiliation" => "string|null",
+                        "orcid" => "string|null",
+                        "bio" => "string|null",
+                    ],
+                ],
+                [
+                    "method" => "GET",
+                    "path" => "/api/v1/users/me",
+                    "description" => "Retrieve current authenticated user's information",
+                    "auth_required" => true,
+                    "admin_only" => false,
+                    "response_code" => 200,
+                    "response_data" => [
+                        "id" => "integer",
+                        "name" => "string",
+                        "email" => "string",
+                        "role" => "string",
+                        "affiliation" => "string|null",
+                        "orcid" => "string|null",
+                        "bio" => "string|null",
+                    ],
+                ],
+                [
                     "method" => "PATCH",
                     "path" => "/api/v1/users/{id}",
                     "description" => "Update any user (admin only)",
@@ -137,7 +137,7 @@ class v1UserController extends v1Controller
                     "response_code" => 200,
                     "response_data" => "Updated user object",
                 ],
-                [// implement this
+                [
                     "method" => "DELETE",
                     "path" => "/api/v1/users/{id}",
                     "description" => "Deactivate a user (admin only)",
@@ -445,41 +445,45 @@ class v1UserController extends v1Controller
             "message" => "Password changed successfully.",
         ]);
     }
-public function me(Request $request): JsonResponse
-{
-    $user = $request->user("sanctum"); 
 
-    if (!$user) {
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user("sanctum"); 
+
+        if (!$user) {
+            return response()->json([
+                "status" => "error",
+                "message" => "Unauthenticated",
+            ], 401);
+        }
+
         return response()->json([
-            "status" => "error",
-            "message" => "Unauthenticated",
-        ], 401);
+            "id" => $user->id,
+            "name" => $user->name,
+            "email" => $user->email,
+            "role" => $user->role?->name ?? null,
+            "affiliation" => $user->affiliation,
+            "orcid" => $user->orcid,
+            "bio" => $user->bio,
+        ], 200);
     }
 
-    return response()->json([
-        "id" => $user->id,
-        "name" => $user->name,
-        "email" => $user->email,
-        "role" => $user->role?->name ?? null,
-        "affiliation" => $user->affiliation,
-        "orcid" => $user->orcid,
-        "bio" => $user->bio,
-    ], 200);
-}
-public function show(Request $request, $id): JsonResponse
-{
-    $id = (int) $id; 
+    public function show(Request $request, $id): JsonResponse
+    {
+        $id = (int)$id; 
 
-    $user = User::findOrFail($id);
+        $user = User::findOrFail($id);
 
-    return response()->json([
-        "id" => $user->id,
-        "name" => $user->name,
-        "email" => $user->email,
-        "role" => $user->role?->name ?? null,
-        "affiliation" => $user->affiliation,
-        "orcid" => $user->orcid,
-        "bio" => $user->bio,
-    ]);
-}
+        return response()->json([
+            "id" => $user->id,
+            "name" => $user->name,
+            "email" => $user->email,
+            "role_id" => $user->role_id,
+            "role" => $user->role?->name ?? null,
+            "affiliation" => $user->affiliation,
+            "orcid" => $user->orcid,
+            "bio" => $user->bio,
+            "deactivated" => $user->deactivated,
+        ]);
+    }
 }

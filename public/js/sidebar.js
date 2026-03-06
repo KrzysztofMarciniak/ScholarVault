@@ -64,7 +64,6 @@ export function renderSidebar(renderCallbacks = {}) {
 
     const sections = [];
 
-    // Common section for everybody (always pushed)
     const commonSection = {
         buttons: [
             {
@@ -88,11 +87,7 @@ export function renderSidebar(renderCallbacks = {}) {
             }
         ]
     };
-
-    // Add the common section first so it's always visible
     sections.push(commonSection);
-
-    // Role-based sections
     if (roles.includes("administrator")) {
         sections.push({
             buttons: [
@@ -120,8 +115,6 @@ export function renderSidebar(renderCallbacks = {}) {
             ],
         });
     }
-
-    // Toggle button (keeps minimized initial state)
     const toggleButton = document.createElement("button");
     toggleButton.innerHTML = `<i class="fa-solid fa-chevron-right"></i>`;
     toggleButton.className = `

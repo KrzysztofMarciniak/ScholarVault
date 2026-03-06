@@ -1,6 +1,5 @@
 // public/js/auth.js
 
-// 0. Send auth request (login)
 function login(email, password) {
     return axios.post('/api/v1/login', { email, password })
         .then(res => {
@@ -14,13 +13,11 @@ function login(email, password) {
         });
 }
 
-// 1. Save token to localStorage
 function saveToken(token) {
     localStorage.setItem('token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }
 
-// Optional: load token from localStorage when page loads
 function loadToken() {
     const token = localStorage.getItem('token');
     if (token) {
@@ -28,7 +25,6 @@ function loadToken() {
     }
 }
 
-// 2. Register a new user (AUTHOR)
 function register(name, email, password, affiliation = '', orcid = '', bio = '') {
     return axios.post('/api/v1/register', {
         name,
@@ -49,5 +45,4 @@ function register(name, email, password, affiliation = '', orcid = '', bio = '')
     });
 }
 
-// Load token automatically on script load
 loadToken();
