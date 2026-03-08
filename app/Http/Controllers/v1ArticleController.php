@@ -135,7 +135,6 @@ class v1ArticleController extends Controller
                     "response_code" => 201,
                     "response_data" => "Article object",
                 ],
-
                 [
                     "method" => "GET",
                     "path" => "/api/v1/articles/my",
@@ -161,8 +160,7 @@ class v1ArticleController extends Controller
                         ],
                     ],
                 ],
-
-                [
+                [// implement
                     "method" => "GET",
                     "path" => "/api/v1/articles/my/{id}",
                     "description" => "View details of an article authored by the authenticated user, including co-authors and citations",
@@ -194,7 +192,6 @@ class v1ArticleController extends Controller
                         ],
                     ],
                 ],
-
                 [ // implement
                     "method" => "POST",
                     "path" => "/api/v1/articles/my/{id}/revision",

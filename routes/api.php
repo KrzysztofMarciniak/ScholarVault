@@ -97,39 +97,39 @@ Route::prefix("v1")->group(function (): void {
         Route::get("help", [v1UserController::class, "help"]);
 
         // Public list (active users only)
-        Route::get("/", [v1UserController::class, "index"]);
+        Route::get("/", [v1UserController::class, "AllUsers"]);
 
         // Search endpoint
-        Route::get("/search", [v1UserController::class, "search"]);
+        Route::get("/search", [v1UserController::class, "SearchUsers"]);
 
         // display users info
-        Route::get("/show/{id}", [v1UserController::class, "show"]);
+        Route::get("/show/{id}", [v1UserController::class, "ShowUser"]);
 
         // Protected routes (require authentication)
         Route::middleware("auth:sanctum")->group(function (): void {
             // Change own password
-            Route::patch("self/password", [v1UserController::class, "changePassword"]);
+            Route::patch("self/password", [v1UserController::class, "SelfchangePassword"]);
 
             // Update own profile
-            Route::put("self", [v1UserController::class, "updateSelf"]);
+            Route::put("self", [v1UserController::class, "AnyUserSelfUpdate"]);
 
             // Delete own account
-            Route::delete("self", [v1UserController::class, "deleteSelf"]);
+            Route::delete("self", [v1UserController::class, "SelfDeactivate"]);
 
             // Display own info
-            Route::get("/me", [v1UserController::class, "me"]);
+            Route::get("/me", [v1UserController::class, "DisplaySelf"]);
         });
 
         // Admin routes
         Route::middleware(["auth:sanctum", "roles:" . Role::ADMINISTRATOR])->group(function (): void {
             // Create user
-            Route::post("/", [v1UserController::class, "store"]);
+            Route::post("/", [v1UserController::class, "AdminCreateUser"]);
 
             // Update user
-            Route::patch("{id}", [v1UserController::class, "update"]);
+            Route::patch("{id}", [v1UserController::class, "AdminUpdateUser"]);
 
             // Deactivate user
-            Route::delete("{id}", [v1UserController::class, "destroy"]);
+            Route::delete("{id}", [v1UserController::class, "AdminDeactivateUser"]);
         });
     });
 

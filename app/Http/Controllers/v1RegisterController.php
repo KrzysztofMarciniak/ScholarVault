@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Services\ApiDocsService;
+use App\Services\RegistrationService;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -12,60 +14,48 @@ use Illuminate\Support\Facades\Hash;
 
 class v1RegisterController extends Controller
 {
-    public function help(): JsonResponse
-    {
-        return response()->json([
-            "message" => "Register API usage instructions",
-            "endpoints" => [
-                "POST /api/v1/register" => [
-                    "description" => "Create a new user. Registration can only assign the AUTHOR role. Email is sanitized to lowercase; password is trimmed.",
-                    "required_fields" => [
-                        "name" => "string, required",
-                        "email" => "string, valid email",
-                        "password" => "string, required",
-                        "affiliation" => "string, optional",
-                        "orcid" => "16-digit number, optional",
-                        "bio" => "string, optional",
-                    ],
-                    "example_request" => [
-                        "name" => "John Doe",
-                        "email" => "john@example.com",
-                        "password" => "secret",
-                        "affiliation" => "University X",
-                        "orcid" => "0000123412341234",
-                        "bio" => "Short bio here",
-                    ],
-                ],
-            ],
-        ]);
-    }
+    public function help(ApiDocsService $docsService): JsonResponse
+{
+    $docsService->addEndpoint([
+        'method' => 'POST',
+        'path' => '/api/v1/register',
+        'description' => 'Create a new user. Registration can only assign the AUTHOR role. Email is sanitized to lowercase; password is trimmed.',
+        'required_fields' => [
+            'name' => 'string, required',
+            'email' => 'string, valid email',
+            'password' => 'string, required',
+            'affiliation' => 'string, optional',
+            'orcid' => '16-digit number, optional',
+            'bio' => 'string, optional',
+        ],
+        'example_request' => [
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
+            'password' => 'secret',
+            'affiliation' => 'University X',
+            'orcid' => '0000123412341234',
+            'bio' => 'Short bio here',
+        ],
+    ]);
 
-    public function register(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            "name" => ["required", "string", "max:255"],
-            "email" => ["required", "email", "unique:users,email"],
-            "password" => ["required", "string", "min:8"],
-            "affiliation" => ["sometimes", "string", "max:255"],
-            "orcid" => ["sometimes", "string", "max:32"],
-            "bio" => ["sometimes", "string"],
-        ]);
+    return response()->json($docsService->toJson());
+}
 
-        $data["password"] = Hash::make($data["password"]);
-        $data["role_id"] = Role::AUTHOR;
 
-        $user = User::create($data);
+public function register(Request $request, RegistrationService $registration): JsonResponse
+{
+    $data = $request->validate([
+        "name" => ["required", "string", "max:255"],
+        "email" => ["required", "email", "unique:users,email"],
+        "password" => ["required", "string", "min:8"],
+        "affiliation" => ["sometimes", "string", "max:255"],
+        "orcid" => ["sometimes", "string", "max:32"],
+        "bio" => ["sometimes", "string"],
+    ]);
 
-        $token = $user->createToken("api-token")->plainTextToken;
+    $result = $registration->register($data);
 
-        return response()->json([
-            "token" => $token,
-            "user" => [
-                "id" => $user->id,
-                "name" => $user->name,
-                "email" => $user->email,
-                "role" => $user->role->name,
-            ],
-        ]);
-    }
+    return response()->json($result, 201);
+}
+
 }

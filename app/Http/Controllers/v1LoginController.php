@@ -3,79 +3,85 @@
 declare(strict_types=1);
 
 namespace App\Http\Controllers;
-
+use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Auth\AuthenticationException;
 
+use App\Services\ApiDocsService;
 class v1LoginController extends Controller
 {
-    public function help(): JsonResponse
-    {
-        return response()->json([
-            "message" => "Login API usage instructions",
-            "endpoints" => [
-                "POST /api/v1/login" => [
-                    "description" => "Authenticate user with email and password, returns API token. Be mindful that we utlize trim sanitization on password, and we sanitize email to be lowercase.",
-                    "required_fields" => [
-                        "email" => "string, valid email",
-                        "password" => "string, required",
-                    ],
-                    "example_request" => [
-                        "email" => "user@example.com",
-                        "password" => "secret",
-                    ],
-                ],
-                "POST /api/v1/login/logout" => [
-                    "description" => "Revoke current API token, logs user out",
-                    "headers" => ["Authorization: Bearer <token>"],
-                ],
+
+public function help(ApiDocsService $docs): JsonResponse
+{
+    $docs->addEndpoints([
+        [
+            "method" => "POST",
+            "path" => "/api/v1/login",
+            "description" => "Authenticate user with email and password, returns API token. Password is trimmed, email is lowercase.",
+            "roles" => ["guest"],
+            "request_body" => [
+                "email" => "string, valid email",
+                "password" => "string, required",
             ],
-        ]);
-    }
-
-    public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            "email" => ["required", "email"],
-            "password" => ["required"],
-        ]);
-
-        if (!Auth::attempt($credentials)) {
-            return response()->json([
-                "message" => "Invalid credentials",
-            ], 401);
-        }
-
-        $user = $request->user()->load("role");
-
-        if ($user->deactivated) {
-            Auth::logout();
-
-            return response()->json([
-                "message" => "User account is deactivated",
-            ], 403);
-        }
-
-        $token = $user->createToken("api-token")->plainTextToken;
-
-        return response()->json([
-            "token" => $token,
-            "user" => [
-                "id" => $user->id,
-                "name" => $user->name,
-                "email" => $user->email,
-                "role" => $user->role?->name,
+            "query_params" => [],
+            "response_code" => 200,
+            "available" => true,
+            "response_data" => [
+                "token" => "string",
             ],
-        ]);
+        ],
+        [
+            "method" => "POST",
+            "path" => "/api/v1/login/logout",
+            "description" => "Revoke current API token, logs user out",
+            "roles" => ["user"],
+            "request_body" => [],
+            "query_params" => [],
+            "response_code" => 200,
+            "available" => true,
+            "response_data" => [
+                "message" => "Logged out successfully",
+            ],
+        ],
+    ]);
+
+    return response()->json([
+        "message" => "Login API usage instructions",
+        "endpoints" => $docs->getEndpoints(),
+    ]);
+}
+
+public function login(Request $request, AuthService $service): JsonResponse
+{
+    $data = $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required'],
+    ]);
+
+    try {
+        $result = $service->login($data);
+    } catch (AuthenticationException $e) {
+        return response()->json(['message' => 'Invalid credentials'], 401);
+    } catch (\RuntimeException $e) {
+        return response()->json(['message' => $e->getMessage()], $e->getCode() === 403 ? 403 : 422);
     }
 
-    public function logout(Request $request)
+    $user = $result['user'];
+    $token = $result['token'];
+
+return response()->json([
+    "token" => $result["token"],
+    "user" => $result["user"],
+]);
+}
+
+    public function logout(Request $request, AuthService $service)
     {
-        $request->user()->currentAccessToken()->delete();
-
-        return response()->json([
-            "message" => "Logged out successfully",
-        ]);
-    }
+    $service->logout($request->user('sanctum'));
+    return response()->json([
+        "message" => "Logged out successfully",
+    ]);
+   }
 }

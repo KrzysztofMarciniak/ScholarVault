@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 namespace App\Http\Controllers;
-
+use App\Services\User\AdminUserService;
+use Illuminate\Support\Facades\Validator;
+use App\Services\User\AnyUserService;
+use App\Services\ApiDocsService;
 use App\Events\UserChangedPassword;
-use App\Events\UserModifiedByAdmin;
 use App\Events\UserUpdatedSelf;
 use App\Models\Role;
 use App\Models\User;
@@ -16,199 +18,192 @@ use Illuminate\Validation\Rule;
 
 class v1UserController extends v1Controller
 {
-    public function help(): JsonResponse
+    public function help(ApiDocsService $apiDocs): JsonResponse
     {
-        return response()->json([
-            "endpoints" => [
-                [
-                    "method" => "POST",
-                    "path" => "/api/v1/users",
-                    "description" => "Create a new user (admin only)",
-                    "auth_required" => true,
-                    "admin_only" => true,
-                    "request_body" => [
-                        "name" => "string|nullable|max:255",
-                        "email" => "string|required|email|unique",
-                        "password" => "string|required|min:6",
-                        "role_id" => "integer|required|exists:roles",
-                        "affiliation" => "string|nullable|max:255",
-                        "orcid" => "string|nullable|max:32",
-                        "bio" => "string|nullable",
-                    ],
-                    "response_code" => 201,
-                    "response_data" => "User object",
+        $apiDocs->addEndpoints([
+            [
+                "method" => "POST",
+                "path" => "/api/v1/users",
+                "description" => "Create a new user (admin only)",
+                "roles" => ["administrator"],
+                "request_body" => [
+                    "name" => "string|nullable|max:255",
+                    "email" => "string|required|email|unique",
+                    "password" => "string|required|min:6",
+                    "role_id" => "integer|required|exists:roles",
+                    "affiliation" => "string|nullable|max:255",
+                    "orcid" => "string|nullable|max:32",
+                    "bio" => "string|nullable",
                 ],
-                [
-                    "method" => "GET",
-                    "path" => "/api/v1/users",
-                    "description" => "List all active users (paginated)",
-                    "auth_required" => false,
-                    "admin_only" => false,
-                    "query_params" => [
-                        "per_page" => "integer (max 100, default 15)",
-                    ],
-                    "response_code" => 200,
-                    "response_data" => "Paginated user list with roles",
+                "query_params" => null,
+                "response_code" => 201,
+                "available" => true,
+                "response_data" => "User object",
+            ],
+
+            [
+                "method" => "GET",
+                "path" => "/api/v1/users",
+                "description" => "List all active users (paginated)",
+                "roles" => ["none"],
+                "request_body" => null,
+                "query_params" => [
+                    "per_page" => "integer (max 100, default 15)",
                 ],
-                [
-                    "method" => "GET",
-                    "path" => "/api/v1/users/search",
-                    "description" => "Search users by name, email, or affiliation (paginated)",
-                    "auth_required" => false,
-                    "admin_only" => false,
-                    "query_params" => [
-                        "q" => "string|required|min:2 (search query)",
-                        "per_page" => "integer (max 100, default 15)",
-                    ],
-                    "response_code" => 200,
-                    "response_data" => "Paginated search results",
+                "response_code" => 200,
+                "available" => true,
+                "response_data" => "Paginated user list with roles",
+            ],
+
+            [
+                "method" => "GET",
+                "path" => "/api/v1/users/search",
+                "description" => "Search users by name, email, or affiliation (paginated)",
+                "roles" => ["none"],
+                "request_body" => null,
+                "query_params" => [
+                    "q" => "string|required|min:2 (search query)",
+                    "per_page" => "integer (max 100, default 15)",
                 ],
-                [
-                    "method" => "PUT",
-                    "path" => "/api/v1/users/self",
-                    "description" => "Update your own profile (authenticated users)",
-                    "auth_required" => true,
-                    "admin_only" => false,
-                    "request_body" => [
-                        "name" => "string|nullable|max:255",
-                        "email" => "string|email|unique (except own)",
-                        "affiliation" => "string|nullable|max:255",
-                        "orcid" => "string|nullable|max:32",
-                        "bio" => "string|nullable",
-                    ],
-                    "response_code" => 200,
-                    "response_data" => "Updated user object",
+                "response_code" => 200,
+                "available" => true,
+                "response_data" => "Paginated search results",
+            ],
+
+            [
+                "method" => "PUT",
+                "path" => "/api/v1/users/self",
+                "description" => "Update your own profile (authenticated users)",
+                "roles" => ["none"],
+                "request_body" => [
+                    "name" => "string|nullable|max:255",
+                    "email" => "string|email|unique (except own)",
+                    "affiliation" => "string|nullable|max:255",
+                    "orcid" => "string|nullable|max:32",
+                    "bio" => "string|nullable",
                 ],
-                [
-                    "method" => "GET",
-                    "path" => "/api/v1/users/{id}",
-                    "description" => "Retrieve a specific user's full information",
-                    "auth_required" => true,
-                    "admin_only" => true,
-                    "path_params" => [
-                        "id" => "integer (user ID)",
-                    ],
-                    "response_code" => 200,
-                    "response_data" => [
-                        "id" => "integer",
-                        "name" => "string",
-                        "email" => "string",
-                        "role" => "string",
-                        "affiliation" => "string|null",
-                        "orcid" => "string|null",
-                        "bio" => "string|null",
-                    ],
-                ],
-                [
-                    "method" => "GET",
-                    "path" => "/api/v1/users/me",
-                    "description" => "Retrieve current authenticated user's information",
-                    "auth_required" => true,
-                    "admin_only" => false,
-                    "response_code" => 200,
-                    "response_data" => [
-                        "id" => "integer",
-                        "name" => "string",
-                        "email" => "string",
-                        "role" => "string",
-                        "affiliation" => "string|null",
-                        "orcid" => "string|null",
-                        "bio" => "string|null",
-                    ],
-                ],
-                [
-                    "method" => "PATCH",
-                    "path" => "/api/v1/users/{id}",
-                    "description" => "Update any user (admin only)",
-                    "auth_required" => true,
-                    "admin_only" => true,
-                    "path_params" => [
-                        "id" => "integer (user ID)",
-                    ],
-                    "request_body" => [
-                        "name" => "string|nullable|max:255",
-                        "email" => "string|email|unique (except target user)",
-                        "password" => "string|min:6",
-                        "role_id" => "integer|exists:roles",
-                        "affiliation" => "string|nullable|max:255",
-                        "orcid" => "string|nullable|max:32",
-                        "bio" => "string|nullable",
-                    ],
-                    "response_code" => 200,
-                    "response_data" => "Updated user object",
-                ],
-                [
-                    "method" => "DELETE",
-                    "path" => "/api/v1/users/{id}",
-                    "description" => "Deactivate a user (admin only)",
-                    "auth_required" => true,
-                    "admin_only" => true,
-                    "path_params" => [
-                        "id" => "integer (user ID)",
-                    ],
-                    "warnings" => ["Cannot deactivate last active administrator"],
-                    "side_effects" => ["Revokes all active tokens"],
-                    "response_code" => 200,
-                    "response_data" => "Success message",
-                ],
-                [
-                    "method" => "DELETE",
-                    "path" => "/api/v1/users/self",
-                    "description" => "Deactivate your own account (authenticated users)",
-                    "auth_required" => true,
-                    "admin_only" => false,
-                    "warnings" => ["Action cannot be undone without admin help"],
-                    "side_effects" => ["Revokes all your active tokens"],
-                    "response_code" => 200,
-                    "response_data" => "Success message",
-                ],
-                [
-                    "method" => "PATCH",
-                    "path" => "/api/v1/users/self/password",
-                    "description" => "Change your own password (authenticated users)",
-                    "auth_required" => true,
-                    "admin_only" => false,
-                    "request_body" => [
-                        "current_password" => "string|required",
-                        "new_password" => "string|required|min:6",
-                        "password_confirmation" => "string|same:new_password",
-                    ],
-                    "response_code" => 200,
-                    "response_data" => "Success message",
+                "query_params" => null,
+                "response_code" => 200,
+                "available" => true,
+                "response_data" => "Updated user object",
+            ],
+
+            [
+                "method" => "GET",
+                "path" => "/api/v1/users/{id}",
+                "description" => "Retrieve a specific user's full information",
+                "roles" => ["administrator"],
+                "request_body" => null,
+                "query_params" => null,
+                "response_code" => 200,
+                "available" => true,
+                "response_data" => [
+                    "id" => "integer",
+                    "name" => "string",
+                    "email" => "string",
+                    "role" => "string",
+                    "affiliation" => "string|null",
+                    "orcid" => "string|null",
+                    "bio" => "string|null",
                 ],
             ],
-            "error_responses" => [
-                [
-                    "code" => 400,
-                    "message" => "Bad Request",
-                    "description" => "Validation failed",
+
+            [
+                "method" => "GET",
+                "path" => "/api/v1/users/me",
+                "description" => "Retrieve current authenticated user's information",
+                "roles" => ["none"],
+                "request_body" => null,
+                "query_params" => null,
+                "response_code" => 200,
+                "available" => true,
+                "response_data" => [
+                    "id" => "integer",
+                    "name" => "string",
+                    "email" => "string",
+                    "role" => "string",
+                    "affiliation" => "string|null",
+                    "orcid" => "string|null",
+                    "bio" => "string|null",
                 ],
-                [
-                    "code" => 401,
-                    "message" => "Unauthorized",
-                    "description" => "Not authenticated or invalid token",
+            ],
+
+            [
+                "method" => "PATCH",
+                "path" => "/api/v1/users/{id}",
+                "description" => "Update any user (admin only)",
+                "roles" => ["administrator"],
+                "request_body" => [
+                    "name" => "string|nullable|max:255",
+                    "email" => "string|email|unique (except target user)",
+                    "password" => "string|min:6",
+                    "role_id" => "integer|exists:roles",
+                    "affiliation" => "string|nullable|max:255",
+                    "orcid" => "string|nullable|max:32",
+                    "bio" => "string|nullable",
                 ],
-                [
-                    "code" => 403,
-                    "message" => "Forbidden",
-                    "description" => "Insufficient permissions (not admin)",
+                "query_params" => null,
+                "response_code" => 200,
+                "available" => true,
+                "response_data" => "Updated user object",
+            ],
+
+            [
+                "method" => "DELETE",
+                "path" => "/api/v1/users/{id}",
+                "description" => "Deactivate a user (admin only)",
+                "roles" => ["administrator"],
+                "request_body" => null,
+                "query_params" => null,
+                "response_code" => 200,
+                "available" => true,
+                "response_data" => "Success message",
+            ],
+
+            [
+                "method" => "DELETE",
+                "path" => "/api/v1/users/self",
+                "description" => "Deactivate your own account (authenticated users)",
+                "roles" => ["none"],
+                "request_body" => null,
+                "query_params" => null,
+                "response_code" => 200,
+                "available" => true,
+                "response_data" => "Success message",
+            ],
+
+            [
+                "method" => "PATCH",
+                "path" => "/api/v1/users/self/password",
+                "description" => "Change your own password (authenticated users)",
+                "roles" => ["none"],
+                "request_body" => [
+                    "current_password" => "string|required",
+                    "new_password" => "string|required|min:6",
+                    "password_confirmation" => "string|same:new_password",
                 ],
-                [
-                    "code" => 404,
-                    "message" => "Not Found",
-                    "description" => "User does not exist",
-                ],
-                [
-                    "code" => 422,
-                    "message" => "Unprocessable Entity",
-                    "description" => "Business logic error",
-                ],
+                "query_params" => null,
+                "response_code" => 200,
+                "available" => true,
+                "response_data" => "Success message",
             ],
         ]);
-    }
 
-    // Admin create
-    public function store(Request $request): JsonResponse
+        $errorResponses = [
+            ["code" => 400, "message" => "Bad Request", "description" => "Validation failed"],
+            ["code" => 401, "message" => "Unauthorized", "description" => "Not authenticated or invalid token"],
+            ["code" => 403, "message" => "Forbidden", "description" => "Insufficient permissions (not admin)"],
+            ["code" => 404, "message" => "Not Found", "description" => "User does not exist"],
+            ["code" => 422, "message" => "Unprocessable Entity", "description" => "Business logic error"],
+        ];
+
+        return response()->json([
+            "endpoints" => $apiDocs->getEndpoints(),
+            "error_responses" => $errorResponses,
+        ]);
+    }
+    // create user as admin
+    public function AdminCreateUser(Request $request, AdminUserService $service): JsonResponse
     {
         $data = $request->validate([
             "name" => ["nullable", "string"],
@@ -220,9 +215,7 @@ class v1UserController extends v1Controller
             "bio" => ["nullable", "string"],
         ]);
 
-        $data["password"] = Hash::make($data["password"]);
-
-        $user = User::create($data);
+        $user = $service->create($data);
 
         return response()->json([
             "status" => "success",
@@ -230,29 +223,21 @@ class v1UserController extends v1Controller
         ], 201);
     }
 
-    // List (paginated) active users with selected fields
-    public function index(Request $request): JsonResponse
-    {
-        $perPage = min((int)$request->query("per_page", 15), 100);
+    public function AllUsers(Request $request): JsonResponse
+{
+    $perPage = min((int) $request->query('per_page', 15), 100);
 
-        $users = User::query()
-            ->where("deactivated", 0)
-            ->with(["role:id,name"])
-            ->select("id", "name", "orcid", "role_id")
-            ->paginate($perPage);
+    $users = User::active()
+        ->withRoleName()
+        ->select(['id','name','orcid','role_id'])
+        ->paginate($perPage)
+        ->through(fn ($u) => $u->toListArray());
 
-        $users->getCollection()->transform(fn($user) => [
-            "id" => $user->id,
-            "name" => $user->name,
-            "orcid" => $user->orcid,
-            "role" => $user->role?->name ?? null,
-        ]);
-
-        return response()->json($users);
-    }
+    return response()->json($users);
+}
 
     // Admin partial update (PATCH semantics)
-    public function update(Request $request, int $id): JsonResponse
+    public function AdminUpdateUser(Request $request, int $id, AdminUserService $service): JsonResponse
     {
         $user = User::findOrFail($id);
 
@@ -270,220 +255,135 @@ class v1UserController extends v1Controller
             "bio" => "sometimes|nullable|string",
         ]);
 
-        if (array_key_exists("password", $data) && $data["password"] !== null) {
-            $data["password"] = Hash::make($data["password"]);
-        }
-
-        $user->fill($data);
-
-        $dirty = $user->getDirty();
-
-        $user->save();
-
-        if (!empty($dirty)) {
-            event(new UserModifiedByAdmin(
-                $request->user(),
-                $user,
-                array_keys($dirty),
-            ));
-        }
+        $updatedUser = $service->update($user, $data);
 
         return response()->json([
             "status" => "success",
-            "data" => $user,
+            "data" => $updatedUser,
         ]);
     }
 
-    public function updateSelf(Request $request): JsonResponse
-    {
-        $user = $request->user();
+public function AnyUserSelfUpdate(Request $request, AnyUserService $service): JsonResponse
+{
+    $user = $request->user('sanctum');
+    $data = $request->validate([
+        "name" => "sometimes|nullable|string|max:255",
+        "email" => [
+            "sometimes",
+            "email",
+            Rule::unique("users")->ignore($user->id),
+        ],
+        "affiliation" => "sometimes|nullable|string|max:255",
+        "orcid" => "sometimes|nullable|string|max:32",
+        "bio" => "sometimes|nullable|string",
+    ]);
 
-        $data = $request->validate([
-            "name" => "sometimes|nullable|string|max:255",
-            "email" => [
-                "sometimes",
-                "email",
-                Rule::unique("users")->ignore($user->id),
-            ],
-            "affiliation" => "sometimes|nullable|string|max:255",
-            "orcid" => "sometimes|nullable|string|max:32",
-            "bio" => "sometimes|nullable|string",
-        ]);
+    $updated = $service->update($user, $data);
 
-        $user->fill($data);
+    return response()->json([
+        "status" => "success",
+        "data" => $updated,
+    ]);
+}
 
-        $dirty = $user->getDirty();
-        $user->save();
+public function AdminDeactivateUser(int $id, AnyUserService $service): JsonResponse
+{
+    $user = User::find($id);
 
-        if (!empty($dirty)) {
-            event(new UserUpdatedSelf($user, array_keys($dirty)));
-        }
-
+    if (!$user || $user->deactivated || !$user->canBeDeactivated()) {
         return response()->json([
-            "status" => "success",
-            "data" => $user,
-        ]);
+            "status" => "error",
+            "message" => "User not found or cannot be deactivated.",
+        ], 404);
     }
 
-    // Admin deactivate
-    public function destroy(int $id): JsonResponse
-    {
-        $user = User::findOrFail($id);
+    $service->deactivate($user);
 
-        if ($user->role_id === Role::ADMINISTRATOR) {
-            $adminCount = User::where("role_id", Role::ADMINISTRATOR)
-                ->where("deactivated", false)
-                ->count();
+    return response()->json([
+        "status" => "success",
+        "message" => "User deactivated.",
+    ]);
+}
 
-            if ($adminCount <= 1) {
-                return response()->json([
-                    "status" => "error",
-                    "message" => "Cannot deactivate the last active administrator.",
-                ], 422);
-            }
-        }
+public function SelfDeactivate(Request $request, AnyUserService $service): JsonResponse
+{
+    $user = $request->user('sanctum');
 
-        $user->update(["deactivated" => true]);
-
-        $user->tokens()->delete();
-
+    try {
+        $service->deactivate($user);
+    } catch (\RuntimeException $e) {
         return response()->json([
-            "status" => "success",
-            "message" => "User deactivated.",
-        ]);
+            "status" => "error",
+            "message" => $e->getMessage(),
+        ], 404);
     }
 
-    public function deleteSelf(Request $request): JsonResponse
-    {
-        $user = $request->user();
+    return response()->json([
+        "status" => "success",
+        "message" => "Your account has been deactivated.",
+    ]);
+}
 
-        $user->update(["deactivated" => true]);
-        $user->tokens()->delete();
 
+public function SearchUsers(Request $request): JsonResponse
+{
+    $data = $request->validate([
+        'q' => 'required|string|min:2',
+        'per_page' => 'sometimes|integer|max:100',
+    ]);
+
+    $user = $request->user('sanctum');
+    $isAdmin = $user?->isAdministrator() ?? false;
+
+    $perPage = $data['per_page'] ?? 15;
+
+    $users = User::searchUsers($data['q'], $includeDeactivated = $isAdmin, $withRole = $isAdmin)
+        ->through(fn ($u) => $u->toSearchArray($isAdmin));
+
+    return response()->json($users);
+}
+
+
+public function SelfChangePassword(Request $request, AnyUserService $service): JsonResponse
+{
+    $user = $request->user('sanctum');
+
+    $rules = [
+        'current_password' => 'required|string',
+        'new_password' => 'required|string|min:6|confirmed',
+    ];
+
+    $validator = Validator::make($request->all(), $rules);
+
+    if ($validator->fails()) {
         return response()->json([
-            "status" => "success",
-            "message" => "Your account has been deactivated.",
-        ]);
+            'status' => 'error',
+            'errors' => $validator->errors(),
+        ], 422);
     }
 
-    public function search(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            "q" => "required|string|min:2",
-        ]);
+    $data = $validator->validated();
 
-        $query = $data["q"];
-        $perPage = min((int)$request->query("per_page", 15), 100);
-
-        $isAdmin = $request->user("sanctum")?->isAdmin() ?? false;
-
-        $usersQuery = User::query()
-            ->where(function ($qBuilder) use ($query): void {
-                $qBuilder->where("name", "like", "%{$query}%")
-                    ->orWhere("email", "like", "%{$query}%")
-                    ->orWhere("affiliation", "like", "%{$query}%");
-            });
-
-        if (!$isAdmin) {
-            $usersQuery->where("deactivated", false);
-        }
-
-        if ($isAdmin) {
-            $usersQuery->with("role");
-        }
-
-        $users = $usersQuery->paginate($perPage);
-
-        $users->getCollection()->transform(function ($user) use ($isAdmin) {
-            if ($isAdmin) {
-                return [
-                    "id" => $user->id,
-                    "name" => $user->name,
-                    "email" => $user->email,
-                    "orcid" => $user->orcid,
-                    "role" => $user->role?->name,
-                    "deactivated" => $user->deactivated,
-                ];
-            }
-
-            return [
-                "id" => $user->id,
-                "name" => $user->name,
-                "orcid" => $user->orcid,
-            ];
-        });
-
-        return response()->json($users);
-    }
-
-    // Change own password
-    public function changePassword(Request $request): JsonResponse
-    {
-        $user = $request->user();
-
-        $data = $request->validate([
-            "current_password" => "required|string",
-            "new_password" => "required|string|min:6",
-            "password_confirmation" => "required|string|same:new_password",
-        ]);
-
-        if (!Hash::check($data["current_password"], $user->password)) {
-            return response()->json([
-                "status" => "error",
-                "message" => "Current password is incorrect.",
-            ], 422);
-        }
-
-        $user->update([
-            "password" => Hash::make($data["new_password"]),
-        ]);
-
-        event(new UserChangedPassword($user));
-
+    if (! Hash::check($data['current_password'], $user->password)) {
         return response()->json([
-            "status" => "success",
-            "message" => "Password changed successfully.",
-        ]);
+            'status' => 'error',
+            'message' => 'Current password is incorrect.',
+        ], 422);
     }
 
-    public function me(Request $request): JsonResponse
-    {
-        $user = $request->user("sanctum"); 
+    $service->changePassword($user, $data['new_password']);
 
-        if (!$user) {
-            return response()->json([
-                "status" => "error",
-                "message" => "Unauthenticated",
-            ], 401);
-        }
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Password changed successfully.',
+    ]);
+}
 
-        return response()->json([
-            "id" => $user->id,
-            "name" => $user->name,
-            "email" => $user->email,
-            "role" => $user->role?->name ?? null,
-            "affiliation" => $user->affiliation,
-            "orcid" => $user->orcid,
-            "bio" => $user->bio,
-        ], 200);
-    }
+public function DisplaySelf(int $id): JsonResponse
+{
+    $user = User::findOrFail($id);
 
-    public function show(Request $request, $id): JsonResponse
-    {
-        $id = (int)$id; 
+    return response()->json($user->toProfileArray());
+}
 
-        $user = User::findOrFail($id);
-
-        return response()->json([
-            "id" => $user->id,
-            "name" => $user->name,
-            "email" => $user->email,
-            "role_id" => $user->role_id,
-            "role" => $user->role?->name ?? null,
-            "affiliation" => $user->affiliation,
-            "orcid" => $user->orcid,
-            "bio" => $user->bio,
-            "deactivated" => $user->deactivated,
-        ]);
-    }
 }

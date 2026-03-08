@@ -139,22 +139,29 @@ function buildSections(roles, callbacks) {
     }
 
     // --- Author section ---
-    if (roles.includes("author")) {
-        sections.push({
-            buttons: [
-                {
-                    label: "My Articles",
-                    icon: "fa-solid fa-pencil",
-                    onClick: callbacks.myArticles
-                },
-                {
-                    label: "Submit Article",
-                    icon: "fa-solid fa-plus",
-                    onClick: callbacks.submitArticle
+if (roles.includes("author")) {
+  sections.push({
+    title: "Author",
+    buttons: [
+      {
+        label: "Submit Article",
+        icon: "fa-solid fa-file-arrow-up",
+        onClick: async () => {
+          const module = await import("./author_submit_article.js");
+          module.renderSubmitArticle();
+        }
+      },
+            {
+                label: "My Articles",
+                icon: "fa-solid fa-file-lines",
+                onClick: async () => {
+                    const module = await import("./author_my_articles.js");
+                    module.renderMyArticles();
                 }
-            ]
-        });
-    }
+            }
+    ]
+  });
+}
 
     // --- Reviewer section ---
     if (roles.includes("reviewer")) {
