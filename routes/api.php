@@ -103,7 +103,7 @@ Route::prefix("v1")->group(function (): void {
         Route::get("/search", [v1UserController::class, "SearchUsers"]);
 
         // display users info
-        Route::get("/show/{id}", [v1UserController::class, "ShowUser"]);
+        Route::get("/show/{id}", [v1UserController::class, "show"]);
 
         // Protected routes (require authentication)
         Route::middleware("auth:sanctum")->group(function (): void {

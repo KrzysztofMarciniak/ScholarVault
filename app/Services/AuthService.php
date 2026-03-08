@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use RuntimeException;
 
 class AuthService
@@ -21,6 +21,7 @@ class AuthService
 
         if ($user->deactivated) {
             Auth::logout();
+
             throw new RuntimeException("User account is deactivated", 403);
         }
 

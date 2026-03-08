@@ -3,18 +3,17 @@
 declare(strict_types=1);
 
 namespace App\Http\Controllers;
-use App\Services\User\AdminUserService;
-use Illuminate\Support\Facades\Validator;
-use App\Services\User\AnyUserService;
-use App\Services\ApiDocsService;
-use App\Events\UserChangedPassword;
-use App\Events\UserUpdatedSelf;
-use App\Models\Role;
+
 use App\Models\User;
+use App\Services\ApiDocsService;
+use App\Services\User\AdminUserService;
+use App\Services\User\AnyUserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use RuntimeException;
 
 class v1UserController extends v1Controller
 {
@@ -202,6 +201,7 @@ class v1UserController extends v1Controller
             "error_responses" => $errorResponses,
         ]);
     }
+
     // create user as admin
     public function AdminCreateUser(Request $request, AdminUserService $service): JsonResponse
     {
@@ -224,17 +224,17 @@ class v1UserController extends v1Controller
     }
 
     public function AllUsers(Request $request): JsonResponse
-{
-    $perPage = min((int) $request->query('per_page', 15), 100);
+    {
+        $perPage = min((int)$request->query("per_page", 15), 100);
 
-    $users = User::active()
-        ->withRoleName()
-        ->select(['id','name','orcid','role_id'])
-        ->paginate($perPage)
-        ->through(fn ($u) => $u->toListArray());
+        $users = User::active()
+            ->withRoleName()
+            ->select(["id", "name", "orcid", "role_id"])
+            ->paginate($perPage)
+            ->through(fn($u) => $u->toListArray());
 
-    return response()->json($users);
-}
+        return response()->json($users);
+    }
 
     // Admin partial update (PATCH semantics)
     public function AdminUpdateUser(Request $request, int $id, AdminUserService $service): JsonResponse
@@ -263,127 +263,142 @@ class v1UserController extends v1Controller
         ]);
     }
 
-public function AnyUserSelfUpdate(Request $request, AnyUserService $service): JsonResponse
-{
-    $user = $request->user('sanctum');
-    $data = $request->validate([
-        "name" => "sometimes|nullable|string|max:255",
-        "email" => [
-            "sometimes",
-            "email",
-            Rule::unique("users")->ignore($user->id),
-        ],
-        "affiliation" => "sometimes|nullable|string|max:255",
-        "orcid" => "sometimes|nullable|string|max:32",
-        "bio" => "sometimes|nullable|string",
-    ]);
+    public function AnyUserSelfUpdate(Request $request, AnyUserService $service): JsonResponse
+    {
+        $user = $request->user("sanctum");
+        $data = $request->validate([
+            "name" => "sometimes|nullable|string|max:255",
+            "email" => [
+                "sometimes",
+                "email",
+                Rule::unique("users")->ignore($user->id),
+            ],
+            "affiliation" => "sometimes|nullable|string|max:255",
+            "orcid" => "sometimes|nullable|string|max:32",
+            "bio" => "sometimes|nullable|string",
+        ]);
 
-    $updated = $service->update($user, $data);
+        $updated = $service->update($user, $data);
 
-    return response()->json([
-        "status" => "success",
-        "data" => $updated,
-    ]);
-}
-
-public function AdminDeactivateUser(int $id, AnyUserService $service): JsonResponse
-{
-    $user = User::find($id);
-
-    if (!$user || $user->deactivated || !$user->canBeDeactivated()) {
         return response()->json([
-            "status" => "error",
-            "message" => "User not found or cannot be deactivated.",
-        ], 404);
+            "status" => "success",
+            "data" => $updated,
+        ]);
     }
 
-    $service->deactivate($user);
+    public function AdminDeactivateUser(int $id, AnyUserService $service): JsonResponse
+    {
+        $user = User::find($id);
 
-    return response()->json([
-        "status" => "success",
-        "message" => "User deactivated.",
-    ]);
-}
+        if (!$user || $user->deactivated || !$user->canBeDeactivated()) {
+            return response()->json([
+                "status" => "error",
+                "message" => "User not found or cannot be deactivated.",
+            ], 404);
+        }
 
-public function SelfDeactivate(Request $request, AnyUserService $service): JsonResponse
-{
-    $user = $request->user('sanctum');
-
-    try {
         $service->deactivate($user);
-    } catch (\RuntimeException $e) {
+
         return response()->json([
-            "status" => "error",
-            "message" => $e->getMessage(),
-        ], 404);
+            "status" => "success",
+            "message" => "User deactivated.",
+        ]);
     }
 
-    return response()->json([
-        "status" => "success",
-        "message" => "Your account has been deactivated.",
-    ]);
-}
+    public function SelfDeactivate(Request $request, AnyUserService $service): JsonResponse
+    {
+        $user = $request->user("sanctum");
 
+        try {
+            $service->deactivate($user);
+        } catch (RuntimeException $e) {
+            return response()->json([
+                "status" => "error",
+                "message" => $e->getMessage(),
+            ], 404);
+        }
 
-public function SearchUsers(Request $request): JsonResponse
-{
-    $data = $request->validate([
-        'q' => 'required|string|min:2',
-        'per_page' => 'sometimes|integer|max:100',
-    ]);
-
-    $user = $request->user('sanctum');
-    $isAdmin = $user?->isAdministrator() ?? false;
-
-    $perPage = $data['per_page'] ?? 15;
-
-    $users = User::searchUsers($data['q'], $includeDeactivated = $isAdmin, $withRole = $isAdmin)
-        ->through(fn ($u) => $u->toSearchArray($isAdmin));
-
-    return response()->json($users);
-}
-
-
-public function SelfChangePassword(Request $request, AnyUserService $service): JsonResponse
-{
-    $user = $request->user('sanctum');
-
-    $rules = [
-        'current_password' => 'required|string',
-        'new_password' => 'required|string|min:6|confirmed',
-    ];
-
-    $validator = Validator::make($request->all(), $rules);
-
-    if ($validator->fails()) {
         return response()->json([
-            'status' => 'error',
-            'errors' => $validator->errors(),
-        ], 422);
+            "status" => "success",
+            "message" => "Your account has been deactivated.",
+        ]);
     }
 
-    $data = $validator->validated();
+    public function SearchUsers(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            "q" => "required|string|min:2",
+            "per_page" => "sometimes|integer|max:100",
+        ]);
 
-    if (! Hash::check($data['current_password'], $user->password)) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Current password is incorrect.',
-        ], 422);
+        $user = $request->user("sanctum");
+        $isAdmin = $user?->isAdministrator() ?? false;
+
+        $perPage = $data["per_page"] ?? 15;
+
+        $users = User::searchUsers($data["q"], $includeDeactivated = $isAdmin, $withRole = $isAdmin)
+            ->through(fn($u) => $u->toSearchArray($isAdmin));
+
+        return response()->json($users);
     }
 
-    $service->changePassword($user, $data['new_password']);
+    public function SelfChangePassword(Request $request, AnyUserService $service): JsonResponse
+    {
+        $user = $request->user("sanctum");
 
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Password changed successfully.',
-    ]);
-}
+        $rules = [
+            "current_password" => "required|string",
+            "new_password" => "required|string|min:6|confirmed",
+        ];
 
-public function DisplaySelf(int $id): JsonResponse
-{
-    $user = User::findOrFail($id);
+        $validator = Validator::make($request->all(), $rules);
 
-    return response()->json($user->toProfileArray());
-}
+        if ($validator->fails()) {
+            return response()->json([
+                "status" => "error",
+                "errors" => $validator->errors(),
+            ], 422);
+        }
 
+        $data = $validator->validated();
+
+        if (!Hash::check($data["current_password"], $user->password)) {
+            return response()->json([
+                "status" => "error",
+                "message" => "Current password is incorrect.",
+            ], 422);
+        }
+
+        $service->changePassword($user, $data["new_password"]);
+
+        return response()->json([
+            "status" => "success",
+            "message" => "Password changed successfully.",
+        ]);
+    }
+
+    public function DisplaySelf(Request $request): JsonResponse
+    {
+        $user = $request->user("sanctum");
+
+        if (!$user) {
+            return response()->json([
+                "status" => "error",
+                "message" => "Unauthenticated",
+            ], 401);
+        }
+
+        return response()->json(
+            $user->toProfileArray(),
+        );
+    }
+
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+
+        return response()->json(
+            $user->toProfileArray(),
+        );
+    }
 }

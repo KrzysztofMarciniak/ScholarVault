@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\DeactivatedCheck;
 use App\Http\Middleware\FormatOrcid;
 use App\Http\Middleware\RolesRequired;
 use App\Http\Middleware\SanitizeWithSanitizer;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SanitizeWithSanitizer::class);
         $middleware->append(FormatOrcid::class);
+        $middleware->append(DeactivatedCheck::class);
 
         $middleware->alias([
             "roles" => RolesRequired::class,

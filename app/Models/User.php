@@ -64,6 +64,21 @@ class User extends Authenticatable
         return self::create($attrs); // password will auto-hash
     }
 
+    public static function searchUsers(string $query, bool $includeDeactivated = false, bool $withRole = false)
+    {
+        $q = self::query()->search($query);
+
+        if (!$includeDeactivated) {
+            $q->active();
+        }
+
+        if ($withRole) {
+            $q->withRoleName();
+        }
+
+        return $q->paginate(15);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Relationships
@@ -233,57 +248,46 @@ class User extends Authenticatable
 
         return $this;
     }
-public function toListArray(): array
-{
-    return [
-        'id' => $this->id,
-        'name' => $this->name,
-        'orcid' => $this->orcid,
-        'role' => $this->role?->name,
-    ];
-}
-public static function searchUsers(string $query, bool $includeDeactivated = false, bool $withRole = false)
-{
-    $q = self::query()->search($query);
 
-    if (!$includeDeactivated) {
-        $q->active();
+    public function toListArray(): array
+    {
+        return [
+            "id" => $this->id,
+            "name" => $this->name,
+            "orcid" => $this->orcid,
+            "role" => $this->role?->name,
+        ];
     }
 
-    if ($withRole) {
-        $q->withRoleName();
+    public function toSearchArray(bool $includeRole = false): array
+    {
+        $base = [
+            "id" => $this->id,
+            "name" => $this->name,
+            "orcid" => $this->orcid,
+        ];
+
+        if ($includeRole) {
+            $base["email"] = $this->email;
+            $base["role"] = $this->role?->name;
+            $base["deactivated"] = $this->deactivated;
+        }
+
+        return $base;
     }
 
-    return $q->paginate(15);
-}
-public function toSearchArray(bool $includeRole = false): array
-{
-    $base = [
-        'id' => $this->id,
-        'name' => $this->name,
-        'orcid' => $this->orcid,
-    ];
-
-    if ($includeRole) {
-        $base['email'] = $this->email;
-        $base['role'] = $this->role?->name;
-        $base['deactivated'] = $this->deactivated;
+    public function toProfileArray(): array
+    {
+        return [
+            "id" => $this->id,
+            "name" => $this->name,
+            "email" => $this->email,
+            "role_id" => $this->role_id,
+            "role" => $this->role?->name,
+            "affiliation" => $this->affiliation,
+            "orcid" => $this->orcid,
+            "bio" => $this->bio,
+            "deactivated" => $this->deactivated,
+        ];
     }
-
-    return $base;
-}
-public function toProfileArray(): array
-{
-    return [
-        'id' => $this->id,
-        'name' => $this->name,
-        'email' => $this->email,
-        'role_id' => $this->role_id,
-        'role' => $this->role?->name,
-        'affiliation' => $this->affiliation,
-        'orcid' => $this->orcid,
-        'bio' => $this->bio,
-        'deactivated' => $this->deactivated,
-    ];
-}
 }

@@ -28,7 +28,7 @@ class v1TestController extends v1Controller
 
         return response()->json(
             json_decode($docs->toJson(), true),
-            200
+            200,
         );
     }
 

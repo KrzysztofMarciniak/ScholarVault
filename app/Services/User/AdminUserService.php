@@ -6,7 +6,6 @@ namespace App\Services\User;
 
 use App\Events\UserModifiedByAdmin;
 use App\Models\User;
-use RuntimeException;
 
 class AdminUserService extends BaseUserService
 {
