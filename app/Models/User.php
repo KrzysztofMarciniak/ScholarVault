@@ -290,4 +290,13 @@ class User extends Authenticatable
             "deactivated" => $this->deactivated,
         ];
     }
+
+    protected static function booted(): void
+    {
+        static::updated(function ($user): void {
+            if ($user->isDirty("deactivated") && $user->deactivated) {
+                $user->tokens()->delete();
+            }
+        });
+    }
 }

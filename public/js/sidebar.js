@@ -95,7 +95,7 @@ function buildSections(roles, callbacks) {
                 onClick: () =>
                     import('./all_users.js').then(m => m.renderUsers())
             },
-            {
+{
                 label: "Search Users",
                 icon: "fa-solid fa-magnifying-glass",
                 onClick: () => {
@@ -114,7 +114,13 @@ function buildSections(roles, callbacks) {
 
                     });
                 }
+            },
+            {
+                label: "Published Articles",
+                icon:"fa-solid fa-newspaper",
+                onClick: ()=>import ('./articles.js').then(m=>m.renderArticles())
             }
+
         ]
     });
 
@@ -245,7 +251,6 @@ export function renderSidebar(renderCallbacks = {}) {
 
     sidebar.innerHTML = "";
 
-    // --- Load user safely ---
     let user = null;
 
     try {
@@ -259,10 +264,8 @@ export function renderSidebar(renderCallbacks = {}) {
 
     const sections = buildSections(roles, renderCallbacks);
 
-    // --- Toggle button ---
     sidebar.appendChild(createToggleButton(sidebar));
 
-    // --- Render sections ---
     sections.forEach(section => {
         sidebar.appendChild(renderSection(section));
     });

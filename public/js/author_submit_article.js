@@ -12,7 +12,7 @@ async function submitArticleApi(formData) {
   if (!token) throw new Error("Not authenticated");
 
   const res = await axios.post(
-    "/api/v1/articles",
+    "/api/v1/articles/submit",
     formData,
     {
       headers: {

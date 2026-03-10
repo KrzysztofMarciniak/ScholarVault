@@ -10,8 +10,8 @@
  * @param {string} [options.margin="0"]
  * @param {string} [options.border="none"]
  * @param {string} [options.extraClasses=""]
- * @param {string|null} [options.title=null] - optional header text
- * @param {string|null} [options.icon=null] - optional Font Awesome class(s), e.g. "fa-solid fa-tachometer-alt"
+ * @param {string|null} [options.title=null] - header text
+ * @param {string|null} [options.icon=null] - Font Awesome class(s), e.g. "fa-solid fa-tachometer-alt"
  * @returns {HTMLElement}
  */
 export function createContentContainer({

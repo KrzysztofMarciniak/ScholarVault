@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use App\Http\Controllers\v1ArticleController;
+use App\Http\Controllers\v1AuthorArticleController;
 use App\Http\Controllers\v1LoginController;
 use App\Http\Controllers\v1RegisterController;
 use App\Http\Controllers\v1TestController;
@@ -17,19 +18,18 @@ Route::prefix("v1")->group(function (): void {
     Route::prefix("articles")->group(function (): void {
         // Help endpoint
         Route::get("help", [v1ArticleController::class, "help"]);
-
         // =========================
         // AUTHOR ROUTES
         // =========================
         Route::middleware(["auth:sanctum", "roles:" . Role::AUTHOR])->group(function (): void {
             // Submit article
-            Route::post("/", [v1ArticleController::class, "store"]);
+            Route::post("/submit", [v1AuthorArticleController::class, "store"]);
 
             // List own articles
-            Route::get("/my", [v1ArticleController::class, "myArticles"]);
+            Route::get("/my/list", [v1AuthorArticleController::class, "myArticles"]);
 
             // View own article
-            Route::get("/my/{id}", [v1ArticleController::class, "myArticle"]);
+            Route::get("/my/{id}", [v1AuthorArticleController::class, "myArticle"]);
             // Submit revision
 
             // View comments
@@ -40,11 +40,11 @@ Route::prefix("v1")->group(function (): void {
         // =========================
         Route::middleware(["auth:sanctum", "roles:" . Role::REVIEWER])->group(function (): void {
             // List assigned
-            Route::get("/assigned", [v1ArticleController::class, "assignedArticles"]);
+            Route::get("/assigned", [v1ReviewerArticleController::class, "assignedArticles"]);
             // View assigned article
-            Route::get("/assigned/{id}", [v1ArticleController::class, "assignedArticle"]);
+            Route::get("/assigned/{id}", [v1ReviewerArticleController::class, "assignedArticle"]);
             // Submit review
-            Route::post("/assigned/{id}/review", [v1ArticleController::class, "submitAssignedReview"]);
+            Route::post("/assigned/{id}/review", [v1ReviewerArticleController::class, "submitAssignedReview"]);
         });
 
         // =========================
@@ -52,13 +52,14 @@ Route::prefix("v1")->group(function (): void {
         // =========================
         Route::middleware(["auth:sanctum", "roles:" . Role::ADMINISTRATOR])->group(function (): void {
             // List all
-            Route::get("/", [v1ArticleController::class, "AdminlistAllArticles"]);
+            Route::get("/", [v1AdminArticleController::class, "AdminlistAllArticles"]);
             // Assign reviewers
             Route::patch("/{id}/reviewers", [v1ArticleController::class, "AdminAssignReviewers"]);
             // Make decision
-
-            // Publish article
+            Route::patch("/{id}/decision", [v1ArticleController::class, "decide"]);
         });
+        Route::get("/", [v1ArticleController::class, "index"]);
+        Route::get("/{id}", [v1ArticleController::class, "show"]);
     });
 
     // --- /api/v1/register ---
@@ -73,7 +74,9 @@ Route::prefix("v1")->group(function (): void {
         Route::get("help", [v1LoginController::class, "help"]);
 
         // Login endpoint
-        Route::post("", [v1LoginController::class, "login"])->middleware([BlockIfAuthenticated::class]);
+        Route::post("/", [v1LoginController::class, "login"])
+            ->name("login")
+            ->middleware([BlockIfAuthenticated::class]);
 
         // Logout endpoint (requires auth)
         Route::post("/logout", [v1LoginController::class, "logout"])
@@ -105,7 +108,6 @@ Route::prefix("v1")->group(function (): void {
         // display users info
         Route::get("/show/{id}", [v1UserController::class, "show"]);
 
-        // Protected routes (require authentication)
         Route::middleware("auth:sanctum")->group(function (): void {
             // Change own password
             Route::patch("self/password", [v1UserController::class, "SelfchangePassword"]);
@@ -117,7 +119,7 @@ Route::prefix("v1")->group(function (): void {
             Route::delete("self", [v1UserController::class, "SelfDeactivate"]);
 
             // Display own info
-            Route::get("/me", [v1UserController::class, "DisplaySelf"]);
+            Route::get("me", [v1UserController::class, "DisplaySelf"]);
         });
 
         // Admin routes
@@ -131,9 +133,5 @@ Route::prefix("v1")->group(function (): void {
             // Deactivate user
             Route::delete("{id}", [v1UserController::class, "AdminDeactivateUser"]);
         });
-    });
-
-    // --- Protected routes ---
-    Route::middleware("auth:sanctum")->group(function (): void {
     });
 });

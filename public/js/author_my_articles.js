@@ -1,124 +1,82 @@
-import { createContentContainer } from "./layout.js";
+// author_my_articles.js
 import { getToken } from "./get_token.js";
+import {
+  renderArticleList,
+  renderLoading,
+  renderEmpty,
+  renderError
+} from "./article_list.js";
 
-/**
- * GET /api/v1/articles/my
- */
-async function fetchMyArticles(page = 1, perPage = 10) {
-    const token = getToken();
-    if (!token) throw new Error("Not authenticated");
+/** Fetch /api/v1/articles/my?page=&per_page= */
+async function fetchMyArticles(page = 1, perPage = 15) {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
 
-    const url = `/api/v1/articles/my?page=${page}&per_page=${perPage}`;
+  const url = new URL("/api/v1/articles/my/list", window.location.origin);
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("per_page", String(perPage));
 
-    const res = await fetch(url, {
-        headers: {
-            "Accept": "application/json",
-            Authorization: `Bearer ${token}`
-        }
-    });
+  const res = await fetch(url.toString(), {
+    headers: {
+      "Accept": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+  });
 
-    if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || res.statusText);
-    }
-
-    return res.json();
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.message || payload.error || res.statusText);
+  return payload;
 }
 
 /**
- * Render author's own articles list
+ * mountSelector: optional selector string to find existing node to render into.
+ * If not provided, defaults to #main-content -> #app -> main -> body.
  */
-export async function renderMyArticles(page = 1) {
+function resolveMount(mountSelector) {
+  if (mountSelector) {
+    const el = document.querySelector(mountSelector);
+    if (el) return el;
+  }
+  return document.querySelector("#main-content") ||
+         document.querySelector("#app") ||
+         document.querySelector("main") ||
+         document.body;
+}
 
-    const container = createContentContainer({
-        title: "My Articles",
-        icon: "fa-solid fa-file-lines",
-        padded: true,
-        margin: "2rem auto",
-        extraClasses: "max-w-4xl bg-white dark:bg-gray-900 rounded-xl shadow-md"
+/** Render author's articles into existing page container (no new layout wrapper) */
+export async function renderMyArticles(page = 1, mountSelector = null) {
+  const perPage = 15;
+  const container = resolveMount(mountSelector);
+
+  // show local loading UI
+  renderLoading(container, "Loading your articles...");
+
+  try {
+    const json = await fetchMyArticles(page, perPage);
+    const articles = Array.isArray(json.data) ? json.data : [];
+    const pagination = json.pagination ?? {
+      current_page: json.current_page ?? page,
+      last_page: json.last_page ?? 1,
+      prev_page_url: json.prev_page_url ?? null,
+      next_page_url: json.next_page_url ?? null
+    };
+
+    if (!articles.length) {
+      renderEmpty(container, `<p class="py-6 text-center text-gray-500 dark:text-gray-400">No articles found.</p>`);
+      return;
+    }
+
+    renderArticleList(container, articles, pagination, {
+      onPageChange: (p) => renderMyArticles(p, mountSelector),
+      onItemClick: (id) => {
+        import("./article_view.js")
+          .then(m => { if (typeof m.showArticle === "function") m.showArticle(id); })
+          .catch(() => console.info("article_view module not available"));
+      }
     });
 
-    container.innerHTML = `
-        <div id="articlesLoading" class="flex items-center justify-center py-6 text-gray-500 dark:text-gray-400">
-            <i class="fa-solid fa-spinner fa-spin text-xl mr-2"></i>
-            Loading your articles...
-        </div>
-    `;
-
-    try {
-        const perPage = 15;
-        const data = await fetchMyArticles(page, perPage);
-        const articles = data.data || [];
-        const pagination = data.pagination || {};
-
-        if (!articles.length) {
-            container.innerHTML = `<p class="py-6 text-center text-gray-500 dark:text-gray-400">No articles found.</p>`;
-            return;
-        }
-
-        container.innerHTML = `
-            <div id="articlesList" class="flex flex-col gap-3"></div>
-            <div id="pagination" class="flex items-center justify-center gap-3 mt-8"></div>
-        `;
-
-        const list = document.getElementById("articlesList");
-        const paginationContainer = document.getElementById("pagination");
-
-        articles.forEach(article => {
-            const item = document.createElement("div");
-            item.className = `
-                flex flex-col p-4 rounded-xl border border-gray-200 dark:border-gray-700
-                bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition
-            `;
-            item.innerHTML = `
-                <div class="flex justify-between items-center mb-2">
-                    <span class="font-medium text-gray-800 dark:text-gray-100">${article.title}</span>
-                    <span class="px-2 py-1 text-xs rounded ${
-                        article.status === "accepted" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" :
-                        article.status === "rejected" ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" :
-                        "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                    }">${article.status}</span>
-                </div>
-                <p class="text-gray-600 dark:text-gray-300 text-sm mb-1">${article.abstract}</p>
-                ${article.doi ? `<p class="text-xs text-gray-500 dark:text-gray-400">DOI: <a href="https://doi.org/${article.doi}" target="_blank" class="underline">${article.doi}</a></p>` : ""}
-            `;
-            list.appendChild(item);
-        });
-
-        // Pagination buttons
-        const prevBtn = document.createElement("button");
-        prevBtn.innerHTML = `<i class="fa-solid fa-chevron-left mr-1"></i>Previous`;
-        prevBtn.disabled = !pagination.prev_page_url;
-        prevBtn.className = `
-            flex items-center px-4 py-2 rounded-lg
-            bg-gray-200 dark:bg-gray-700
-            hover:bg-gray-300 dark:hover:bg-gray-600
-            text-gray-800 dark:text-gray-200
-            disabled:opacity-40 disabled:cursor-not-allowed
-            transition
-        `;
-        prevBtn.onclick = () => renderMyArticles(pagination.current_page - 1);
-        paginationContainer.appendChild(prevBtn);
-
-        const pageIndicator = document.createElement("span");
-        pageIndicator.className = "px-3 text-sm text-gray-600 dark:text-gray-400";
-        pageIndicator.textContent = `Page ${pagination.current_page} / ${pagination.last_page}`;
-        paginationContainer.appendChild(pageIndicator);
-
-        const nextBtn = document.createElement("button");
-        nextBtn.innerHTML = `Next<i class="fa-solid fa-chevron-right ml-1"></i>`;
-        nextBtn.disabled = !pagination.next_page_url;
-        nextBtn.className = prevBtn.className;
-        nextBtn.onclick = () => renderMyArticles(pagination.current_page + 1);
-        paginationContainer.appendChild(nextBtn);
-
-    } catch (err) {
-        container.innerHTML = `
-            <div class="flex items-center justify-center py-10 text-red-600 dark:text-red-400">
-                <i class="fa-solid fa-triangle-exclamation mr-2"></i>
-                Failed to load articles: ${err.message}
-            </div>
-        `;
-        console.error(err);
-    }
+  } catch (err) {
+    renderError(container, err);
+    console.error("Failed to load articles:", err);
+  }
 }

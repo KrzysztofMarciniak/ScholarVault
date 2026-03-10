@@ -379,17 +379,8 @@ class v1UserController extends v1Controller
 
     public function DisplaySelf(Request $request): JsonResponse
     {
-        $user = $request->user("sanctum");
-
-        if (!$user) {
-            return response()->json([
-                "status" => "error",
-                "message" => "Unauthenticated",
-            ], 401);
-        }
-
         return response()->json(
-            $user->toProfileArray(),
+            $request->user()->toProfileArray(),
         );
     }
 

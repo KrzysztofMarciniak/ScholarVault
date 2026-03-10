@@ -16,7 +16,7 @@ class DeactivatedCheck
     {
         $user = $request->user("sanctum");
 
-        if ($user?->deactivated) {
+        if ($user && $user->deactivated) {
             return response()->json([
                 "status" => "error",
                 "message" => "Your account has been deactivated.",

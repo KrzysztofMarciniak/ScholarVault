@@ -66,4 +66,44 @@ class Article extends Model
             "article_id",       // citing article
         )->withTimestamps();
     }
+
+    public function scopeAuthoredBy($query, int $authorId)
+    {
+        return $query->whereHas("authors", function ($q) use ($authorId): void {
+            $q->where("user_id", $authorId);
+        });
+    }
+
+    /**
+     * Return array shaped for author single-article view.
+     */
+    public function toAuthorDetailArray(): array
+    {
+        return [
+            "id" => $this->id,
+            "title" => $this->title,
+            "abstract" => $this->abstract,
+            "filename" => $this->filename,
+            "file_type" => $this->file_type,
+            "keywords" => $this->keywords,
+            "status" => $this->status?->name,
+            "doi" => $this->doi,
+            "authors" => $this->authors->map(fn($a) => [
+                "name" => $a->name,
+                "orcid" => $a->orcid,
+                "is_primary" => (bool)($a->pivot->is_primary ?? false),
+            ])->values()->all(),
+            "citations" => $this->citations->map(fn($c) => [
+                "id" => $c->id,
+                "title" => $c->title,
+                "doi" => $c->doi,
+            ])->values()->all(),
+        ];
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(ArticleComment::class)
+            ->latest();
+    }
 }
