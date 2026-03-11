@@ -7,6 +7,9 @@ namespace App\Services\Article;
 use App\Enums\ArticleStatus;
 use App\Events\ArticleSubmitted;
 use App\Models\Article;
+use App\Models\ArticleComment;
+use Exception;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile as IlluminateUploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -82,8 +85,41 @@ class AuthorArticleService extends BaseArticleService
         return $data;
     }
 
-    public function viewComments(int $authorId, int $articleId): array
+    /**
+     * List comments for an article authored by $authorId.
+     *
+     * @return Collection
+     */
+    public function listComments(int $articleId, int $authorId): EloquentCollection
     {
-        return [];
+        $article = $this->viewMyArticle($authorId, $articleId);
+
+        if (!$article) {
+            return collect(); // empty Eloquent collection
+        }
+
+        return ArticleComment::with("user")
+            ->where("article_id", $articleId)
+            ->orderBy("created_at", "asc")
+            ->get();
+    }
+
+    /**
+     * Add a comment to an article authored by $authorId.
+     */
+    public function addComment(int $articleId, int $authorId, string $comment): ArticleComment
+    {
+        // Ensure the user is an author of the article
+        $article = $this->viewMyArticle($authorId, $articleId);
+
+        if (!$article) {
+            throw new Exception("Unauthorized or article not found.");
+        }
+
+        return ArticleComment::create([
+            "article_id" => $articleId,
+            "user_id" => $authorId,
+            "comment" => $comment,
+        ]);
     }
 }

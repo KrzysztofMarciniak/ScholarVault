@@ -65,15 +65,18 @@ export async function renderMyArticles(page = 1, mountSelector = null) {
       renderEmpty(container, `<p class="py-6 text-center text-gray-500 dark:text-gray-400">No articles found.</p>`);
       return;
     }
-
-    renderArticleList(container, articles, pagination, {
-      onPageChange: (p) => renderMyArticles(p, mountSelector),
-      onItemClick: (id) => {
-        import("./article_view.js")
-          .then(m => { if (typeof m.showArticle === "function") m.showArticle(id); })
-          .catch(() => console.info("article_view module not available"));
-      }
-    });
+renderArticleList(container, articles, pagination, {
+  onPageChange: (p) => renderMyArticles(p, mountSelector),
+  onItemClick: (id) => {
+    import("./author_article.js")
+      .then(m => {
+        if (typeof m.renderAuthorArticle === "function") {
+          m.renderAuthorArticle(id); // load the new author article UI
+        }
+      })
+      .catch(err => console.error("author_article module failed to load:", err));
+  }
+});
 
   } catch (err) {
     renderError(container, err);

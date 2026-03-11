@@ -24,7 +24,6 @@ class Article extends Model
         "keywords" => "array",
     ];
 
-    // Relationship to article status
     public function status()
     {
         return $this->belongsTo(ArticleStatus::class, "status_id");

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\ArticleStatus;
 use App\Events\ReviewersAssigned;
 use App\Models\Article;
 use App\Services\ApiDocsService;
@@ -97,7 +98,7 @@ class v1AdminArticleController extends v1Controller
             $article = $service->assignReviewers($id, $validated["reviewers"]);
 
             // Update article status to UNDER_REVIEW
-            $article->status_id = \App\Enums\ArticleStatus::UNDER_REVIEW->value;
+            $article->status_id = ArticleStatus::UNDER_REVIEW->value;
             $article->save();
 
             event(new ReviewersAssigned($article, $validated["reviewers"]));
@@ -234,15 +235,17 @@ class v1AdminArticleController extends v1Controller
 
         return response()->json($service->getDocs());
     }
-public function makeDecision(Request $request, int $id, AdminArticleService $service): JsonResponse
-{
-    $validated = $request->validate([
-        'status' => 'required|string|in:published,rejected_by_admin',
-    ]);
 
-    $response = $service->makeDecision($id, $validated['status']);
+    public function makeDecision(Request $request, int $id, AdminArticleService $service): JsonResponse
+    {
+        $validated = $request->validate([
+            "status" => "required|string|in:published,rejected_by_admin",
+        ]);
 
-    $statusCode = $response['status'] === 'success' ? 200 : 403;
-    return response()->json($response, $statusCode);
-}
+        $response = $service->makeDecision($id, $validated["status"]);
+
+        $statusCode = $response["status"] === "success" ? 200 : 403;
+
+        return response()->json($response, $statusCode);
+    }
 }

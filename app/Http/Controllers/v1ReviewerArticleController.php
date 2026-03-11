@@ -221,59 +221,59 @@ class v1ReviewerArticleController extends v1Controller
 
         return response()->json($apiDocs->getDocs());
     }
-public function makeDecision(Request $request, int $id): JsonResponse
-{
-    $data = $request->validate([
-        "decision" => "required|string|in:accepted,rejected",
-    ]);
 
-    $userId = $request->user()->id;
-    $decision = $data["decision"];
+    public function makeDecision(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate([
+            "decision" => "required|string|in:accepted,rejected",
+        ]);
 
-    // Fetch article by ID from URL
-    $article = Article::with('reviewers')->findOrFail($id);
+        $userId = $request->user()->id;
+        $decision = $data["decision"];
 
-    // Verify reviewer assignment via article_reviewer pivot
-    $assigned = $article->reviewers->contains($userId);
+        // Fetch article by ID from URL
+        $article = Article::with("reviewers")->findOrFail($id);
 
-    if (!$assigned) {
+        // Verify reviewer assignment via article_reviewer pivot
+        $assigned = $article->reviewers->contains($userId);
+
+        if (!$assigned) {
+            return response()->json([
+                "message" => "You are not assigned to review this article.",
+            ], 403);
+        }
+
+        $currentStatus = $article->status_id;
+
+        // Prevent illegal status transitions
+        if ($currentStatus === ArticleStatus::ACCEPTED->value && $decision === "rejected") {
+            return response()->json([
+                "message" => "Cannot reject an already accepted article.",
+            ], 403);
+        }
+
+        if (
+            in_array($currentStatus, [
+                ArticleStatus::REJECTED->value,
+                ArticleStatus::REJECTED_BY_ADMIN->value,
+            ], true) && $decision === "accepted"
+        ) {
+            return response()->json([
+                "message" => "Cannot accept an already rejected article.",
+            ], 403);
+        }
+
+        // Apply new status
+        $article->status_id = $decision === "accepted"
+            ? ArticleStatus::ACCEPTED->value
+            : ArticleStatus::REJECTED->value;
+
+        $article->save();
+
         return response()->json([
-            "message" => "You are not assigned to review this article.",
-        ], 403);
+            "status" => "success",
+            "article_id" => $article->id,
+            "new_status" => $article->status_id,
+        ]);
     }
-
-    $currentStatus = $article->status_id;
-
-    // Prevent illegal status transitions
-    if ($currentStatus === ArticleStatus::ACCEPTED->value && $decision === "rejected") {
-        return response()->json([
-            "message" => "Cannot reject an already accepted article.",
-        ], 403);
-    }
-
-    if (
-        in_array($currentStatus, [
-            ArticleStatus::REJECTED->value,
-            ArticleStatus::REJECTED_BY_ADMIN->value,
-        ], true) && $decision === "accepted"
-    ) {
-        return response()->json([
-            "message" => "Cannot accept an already rejected article.",
-        ], 403);
-    }
-
-    // Apply new status
-    $article->status_id = $decision === "accepted"
-        ? ArticleStatus::ACCEPTED->value
-        : ArticleStatus::REJECTED->value;
-
-    $article->save();
-
-    return response()->json([
-        "status" => "success",
-        "article_id" => $article->id,
-        "new_status" => $article->status_id,
-    ]);
 }
-
-    }

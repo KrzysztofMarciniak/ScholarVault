@@ -39,9 +39,12 @@ Route::prefix("v1")->group(function (): void {
 
             // View own article
             Route::get("/my/{id}", [v1AuthorArticleController::class, "myArticle"]);
-            // Submit revision
+            // Submit revision (submits new file)
 
             // View comments
+            Route::get("/my/comments/{id}", [v1AuthorArticleController::class, "listComments"]);
+            // Post comment
+            Route::post("/my/comments/{id}", [v1AuthorArticleController::class, "addComment"]);
         });
 
         // =========================

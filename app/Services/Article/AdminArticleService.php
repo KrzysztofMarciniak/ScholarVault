@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Article;
 
-use App\Models\Article;
 use App\Enums\ArticleStatus;
+use App\Models\Article;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -145,36 +145,37 @@ class AdminArticleService extends BaseArticleService
 
         if (!$article) {
             return [
-                'status' => 'error',
-                'message' => 'Article not found',
+                "status" => "error",
+                "message" => "Article not found",
             ];
         }
 
         $status = strtolower($status);
-        if (!in_array($status, ['published', 'rejected_by_admin'], true)) {
+
+        if (!in_array($status, ["published", "rejected_by_admin"], true)) {
             return [
-                'status' => 'error',
-                'message' => 'Invalid status. Only "published" or "rejected_by_admin" allowed.',
+                "status" => "error",
+                "message" => 'Invalid status. Only "published" or "rejected_by_admin" allowed.',
             ];
         }
 
         $newStatus = match($status) {
-            'published' => ArticleStatus::PUBLISHED->value,
-            'rejected_by_admin' => ArticleStatus::REJECTED_BY_ADMIN->value,
+            "published" => ArticleStatus::PUBLISHED->value,
+            "rejected_by_admin" => ArticleStatus::REJECTED_BY_ADMIN->value,
         };
 
         // Prevent illegal transitions
         if ($article->status_id === ArticleStatus::REJECTED->value && $newStatus === ArticleStatus::PUBLISHED->value) {
             return [
-                'status' => 'error',
-                'message' => 'Cannot publish a rejected article.',
+                "status" => "error",
+                "message" => "Cannot publish a rejected article.",
             ];
         }
 
         if ($article->status_id === ArticleStatus::PUBLISHED->value && $newStatus === ArticleStatus::REJECTED_BY_ADMIN->value) {
             return [
-                'status' => 'error',
-                'message' => 'Cannot reject an already published article.',
+                "status" => "error",
+                "message" => "Cannot reject an already published article.",
             ];
         }
 
@@ -182,11 +183,9 @@ class AdminArticleService extends BaseArticleService
         $article->save();
 
         return [
-            'status' => 'success',
-            'article_id' => $article->id,
-            'new_status' => $article->status_id,
+            "status" => "success",
+            "article_id" => $article->id,
+            "new_status" => $article->status_id,
         ];
     }
-
-
 }

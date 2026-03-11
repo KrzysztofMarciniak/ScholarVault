@@ -194,7 +194,7 @@ class v1AuthorArticleController extends v1Controller
 
     public function myArticles(Request $request, AuthorArticleService $service): JsonResponse
     {
-        $authorId = $request->user()->id;
+        $authorId = $request->user("sanctum")->id;
         $perPage = (int)$request->query("per_page", 10);
 
         $articles = $service->listMyArticles($authorId, $perPage);
@@ -234,7 +234,7 @@ class v1AuthorArticleController extends v1Controller
         return response()->json($article, 200);
     }
 
-    public function listComments(Request $request, int $id, ArticleCommentService $commentsService): JsonResponse
+    public function listComments(Request $request, int $id, AuthorArticleService $commentsService): JsonResponse
     {
         $comments = $commentsService->listComments($id, $request->user()->id);
 
@@ -248,7 +248,7 @@ class v1AuthorArticleController extends v1Controller
         );
     }
 
-    public function addComment(Request $request, int $id, ArticleCommentService $commentsService): JsonResponse
+    public function addComment(Request $request, int $id, AuthorArticleService $commentsService): JsonResponse
     {
         $request->validate([
             "comment" => "required|string|max:5000",
