@@ -5,6 +5,7 @@ import { logout } from './logout.js';
 import { initThemeSwitcher } from './theme.js';
 import { initUserMenu } from './user_menu.js';
 import { renderSidebar } from './sidebar.js';
+import { initNotificationsModal } from "./notifications_ui.js";
 import { renderSelfUpdate } from './self_update.js';
 import { renderDeleteSelf } from './self_delete.js';
 import { renderChangePassword } from './self_password.js';
@@ -13,7 +14,7 @@ import { renderHome } from "./home.js";
 const app = document.getElementById("app");
 
 initUserMenu();
-
+initNotificationsModal();
 /* ------ Helpers ------ */
 function createMenuButton(menu, label, className, handler, html = false) {
   const li = document.createElement("li");

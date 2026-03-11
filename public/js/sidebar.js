@@ -125,10 +125,10 @@ function buildSections(roles, callbacks) {
     });
 
     // --- Admin section ---
-    if (roles.includes("administrator")) {
-        sections.push({
-            buttons: [
-                      {
+if (roles.includes("administrator")) {
+  sections.push({
+    buttons: [
+      {
         label: "Create User",
         icon: "fa-solid fa-user-plus",
         onClick: async () => {
@@ -139,10 +139,22 @@ function buildSections(roles, callbacks) {
             console.error("Failed to load admin_create_user module:", err);
           }
         }
+      },
+      {
+        label: "Manage Articles",
+        icon: "fa-solid fa-newspaper",
+        onClick: async () => {
+          try {
+            const module = await import("./admin_list_articles.js");
+            module.renderAdminArticles();
+          } catch (err) {
+            console.error("Failed to load admin_list_articles module:", err);
+          }
+        }
       }
-            ]
-        });
-    }
+    ]
+  });
+}
 
     // --- Author section ---
 if (roles.includes("author")) {

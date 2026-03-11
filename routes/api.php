@@ -3,8 +3,10 @@
 declare(strict_types=1);
 use App\Http\Controllers\v1ArticleController;
 use App\Http\Controllers\v1AuthorArticleController;
+use App\Http\Controllers\v1AdminArticleController;
 use App\Http\Controllers\v1LoginController;
 use App\Http\Controllers\v1RegisterController;
+use App\Http\Controllers\v1NotificationController;
 use App\Http\Controllers\v1TestController;
 use App\Http\Controllers\v1TestMiddlewareSanitization;
 use App\Http\Controllers\v1UserController;
@@ -14,6 +16,12 @@ use Illuminate\Support\Facades\Route;
 
 // --- /api/v1/ ---
 Route::prefix("v1")->group(function (): void {
+    //api/v1/notifications
+Route::prefix("notifications")->middleware("auth:sanctum")->group(function () {
+    Route::get("/check", [v1NotificationController::class, "check"]);
+    Route::patch("/read/{id}", [v1NotificationController::class, "markRead"]);
+    Route::patch("/read-all", [v1NotificationController::class, "markAllRead"]);
+});
     // --- /api/v1/articles ---
     Route::prefix("articles")->group(function (): void {
         // Help endpoint
@@ -47,17 +55,15 @@ Route::prefix("v1")->group(function (): void {
             Route::post("/assigned/{id}/review", [v1ReviewerArticleController::class, "submitAssignedReview"]);
         });
 
-        // =========================
-        // ADMIN ROUTES
-        // =========================
-        Route::middleware(["auth:sanctum", "roles:" . Role::ADMINISTRATOR])->group(function (): void {
-            // List all
-            Route::get("/", [v1AdminArticleController::class, "AdminlistAllArticles"]);
-            // Assign reviewers
-            Route::patch("/{id}/reviewers", [v1ArticleController::class, "AdminAssignReviewers"]);
-            // Make decision
-            Route::patch("/{id}/decision", [v1ArticleController::class, "decide"]);
-        });
+// =========================
+// ADMIN ROUTES
+// =========================
+Route::middleware(["auth:sanctum", "roles:" . Role::ADMINISTRATOR])->prefix("admin")->group(function (): void {
+    Route::get("/", [v1AdminArticleController::class, "AdminlistAllArticles"]);
+    Route::get("/reviewers", [v1AdminArticleController::class, "listReviewers"]);
+    Route::patch("/reviewers/{id}", [v1AdminArticleController::class, "AdminAssignReviewers"]);
+    Route::patch("/decision/{id}", [v1AdminArticleController::class, "decide"]);
+});
         Route::get("/", [v1ArticleController::class, "index"]);
         Route::get("/{id}", [v1ArticleController::class, "show"]);
     });

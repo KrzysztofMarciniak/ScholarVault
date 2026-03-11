@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace App\Services\Article;
+
 use App\Enums\ArticleStatus;
 use App\Models\Article;
 
@@ -13,8 +14,8 @@ class AnyArticleService extends BaseArticleService
      */
     public function listArticles(array $filters = []): array
     {
-    $query = Article::query()
-        ->where("status_id", ArticleStatus::PUBLISHED->value);
+        $query = Article::query()
+            ->where("status_id", ArticleStatus::PUBLISHED->value);
 
         if (!empty($filters["author_id"])) {
             $query->whereHas("authors", fn($q) => $q->where("user_id", $filters["author_id"]));

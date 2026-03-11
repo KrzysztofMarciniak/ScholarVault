@@ -5,41 +5,106 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Services\ApiDocsService;
+use App\Services\Article\AdminArticleService;
+use App\Models\Article;
+use App\Models\ArticleStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
-
+use App\Events\ReviewersAssigned;
 class v1AdminArticleController extends v1Controller
 {
-    public function AdminAssignReviewers(
-        Request $request,
-        int $id,
-        AdminArticleService $service,
-    ): JsonResponse {
-        $validated = $request->validate([
-            "reviewers" => ["required", "array"],
-            "reviewers.*" => ["integer"],
-        ]);
 
-        try {
-            $article = $service->assignReviewers($id, $validated["reviewers"]);
-        } catch (InvalidArgumentException $e) {
-            return response()->json([
-                "message" => $e->getMessage(),
-            ], 422);
+public function listReviewers(
+    Request $request,
+    AdminArticleService $service
+): JsonResponse {
+
+    $perPage = (int) $request->get("per_page", 10);
+    $search = $request->get("search");
+
+    $reviewers = $service->listReviewers($perPage, $search);
+
+    return response()->json($reviewers, 200);
+}
+
+public function AdminlistAllArticles(Request $request, AdminArticleService $service): JsonResponse
+{
+    $perPage = (int) $request->get("per_page", 5);
+
+    $filters = [
+        "status" => $request->get("status"), // may be null
+        "search" => $request->get("search"), // may be null
+    ];
+
+    \Log::info('AdminlistAllArticles - incoming filters', $filters);
+
+    try {
+        $articles = $service->listArticles($perPage, $filters);
+
+        $query = Article::query();
+
+        if (!empty($filters["status"])) {
+            $query->where("status_id", $filters["status"]);
+        }
+        if (!empty($filters["search"])) {
+            $search = $filters["search"];
+            $query->where(function($q) use ($search) {
+                $q->where("title", "like", "%$search%")
+                  ->orWhere("abstract", "like", "%$search%");
+            });
         }
 
-        return response()->json($article, 200);
-    }
+        \Log::info('AdminlistAllArticles - raw SQL', [
+            'sql' => $query->toSql(),
+            'bindings' => $query->getBindings(),
+            'count_matching' => $query->count(),
+        ]);
 
-    public function AdminlistAllArticles(
-        Request $request,
-        AdminArticleService $service,
-    ): JsonResponse {
-        $articles = $service->listArticles(5);
+        \Log::info('AdminlistAllArticles - paginated result', [
+            'total' => $articles->total(),
+            'per_page' => $articles->perPage(),
+            'current_page' => $articles->currentPage(),
+            'last_page' => $articles->lastPage(),
+        ]);
 
         return response()->json($articles, 200);
+    } catch (\Throwable $e) {
+        \Log::error('AdminlistAllArticles failed', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'error' => 'Failed to fetch articles',
+            'message' => $e->getMessage(),
+        ], 500);
     }
+}
+
+public function AdminAssignReviewers(
+    Request $request,
+    int $id,
+    AdminArticleService $service,
+): JsonResponse {
+    $validated = $request->validate([
+        "reviewers" => ["required", "array"],
+        "reviewers.*" => ["integer"],
+    ]);
+
+    try {
+        $article = $service->assignReviewers($id, $validated["reviewers"]);
+
+        event(new ReviewersAssigned($article, $validated["reviewers"]));
+
+    } catch (InvalidArgumentException $e) {
+        return response()->json([
+            "message" => $e->getMessage(),
+        ], 422);
+    }
+
+    return response()->json($article, 200);
+}
 
     /**
      * Make final decision on an article (admin only).
@@ -69,12 +134,12 @@ class v1AdminArticleController extends v1Controller
         ], 200);
     }
 
-    public function help(ApiDocsService $service): void
+    public function help(ApiDocsService $apiDocs): JsonResponse
     {
-        $service->addEndpoints([
+        $apiDocs->addEndpoints([
             [
                 "method" => "GET",
-                "path" => "/api/v1/articles",
+                "path" => "/api/v1/admin/articles",
                 "description" => "List all articles with full details, including authors, citations, and articles that cite them. Paginated to 5 per page.",
                 "auth_required" => true,
                 "roles" => ["admin"],
@@ -131,7 +196,7 @@ class v1AdminArticleController extends v1Controller
             ],
             [
                 "method" => "PATCH",
-                "path" => "/api/v1/articles/{id}/reviewers",
+                "path" => "/api/v1/articles/admin/reviewers/{id}",
                 "description" => "Replace all reviewers assigned to an article (admin only). Existing reviewers are removed if not included in request.",
                 "auth_required" => true,
                 "roles" => ["admin"],
@@ -148,7 +213,7 @@ class v1AdminArticleController extends v1Controller
             ],
             [
                 "method" => "PATCH",
-                "path" => "/api/v1/articles/{id}/decision",
+                "path" => "/api/v1/articles/decision/{id}",
                 "description" => "Make final decision on an article",
                 "auth_required" => true,
                 "roles" => ["admin"],
@@ -161,6 +226,36 @@ class v1AdminArticleController extends v1Controller
                 "roles" => [],
                 "query_params" => [],
             ],
+[
+    "method" => "GET",
+    "path" => "/api/v1/articles/admin/reviewers",
+    "description" => "List all reviewers (admin only). Paginated.",
+    "auth_required" => true,
+    "roles" => ["admin"],
+    "query_params" => [
+        "page" => "integer",
+        "per_page" => "integer",
+        "search" => "string (optional)"
+    ],
+    "response_code" => 200,
+    "response_data" => [
+        "current_page" => "integer",
+        "per_page" => "integer",
+        "total" => "integer",
+        "data" => [
+            [
+                "id" => "integer",
+                "name" => "string",
+                "email" => "string",
+                "affiliation" => "string|null",
+                "orcid" => "string|null",
+                "deactivated" => "boolean"
+            ]
+        ]
+    ],
+]
         ]);
+
+    return response()->json($service->getDocs());
     }
 }

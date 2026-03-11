@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\Article;
 use App\Enums\ArticleStatus;
+use App\Models\Article;
 use App\Services\Article\AnyArticleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -138,16 +138,17 @@ class v1ArticleController extends Controller
     /**
      * List paginated articles.
      */
-public function index(Request $request, AnyArticleService $service): JsonResponse
-{
-    $filters = $request->only(["page", "per_page", "search", "keyword", "author_id", "sort"]);
+    public function index(Request $request, AnyArticleService $service): JsonResponse
+    {
+        $filters = $request->only(["page", "per_page", "search", "keyword", "author_id", "sort"]);
 
-    $filters["status_id"] = ArticleStatus::PUBLISHED->value;
+        $filters["status_id"] = ArticleStatus::PUBLISHED->value;
 
-    $result = $service->listArticles($filters);
+        $result = $service->listArticles($filters);
 
-    return response()->json($result, 200);
-}
+        return response()->json($result, 200);
+    }
+
     /**
      * Get a single article by ID.
      */
