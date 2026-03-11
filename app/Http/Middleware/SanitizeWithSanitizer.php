@@ -29,6 +29,7 @@ class SanitizeWithSanitizer
             "comments" => "escape|trim",
             "recommendation" => "escape|trim",
             "reviewers" => "trim|digit|escape",
+            "comment" => "trim|escape|capitalize",
         ];
 
         $sanitizer = new Sanitizer($input, $filters);

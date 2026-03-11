@@ -4,134 +4,110 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Events\ReviewersAssigned;
+use App\Models\Article;
 use App\Services\ApiDocsService;
 use App\Services\Article\AdminArticleService;
-use App\Models\Article;
-use App\Models\ArticleStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
-use App\Events\ReviewersAssigned;
+use Log;
+use Throwable;
+
 class v1AdminArticleController extends v1Controller
 {
+    public function listReviewers(
+        Request $request,
+        AdminArticleService $service,
+    ): JsonResponse {
+        $perPage = (int)$request->get("per_page", 10);
+        $search = $request->get("search");
 
-public function listReviewers(
-    Request $request,
-    AdminArticleService $service
-): JsonResponse {
+        $reviewers = $service->listReviewers($perPage, $search);
 
-    $perPage = (int) $request->get("per_page", 10);
-    $search = $request->get("search");
-
-    $reviewers = $service->listReviewers($perPage, $search);
-
-    return response()->json($reviewers, 200);
-}
-
-public function AdminlistAllArticles(Request $request, AdminArticleService $service): JsonResponse
-{
-    $perPage = (int) $request->get("per_page", 5);
-
-    $filters = [
-        "status" => $request->get("status"), // may be null
-        "search" => $request->get("search"), // may be null
-    ];
-
-    \Log::info('AdminlistAllArticles - incoming filters', $filters);
-
-    try {
-        $articles = $service->listArticles($perPage, $filters);
-
-        $query = Article::query();
-
-        if (!empty($filters["status"])) {
-            $query->where("status_id", $filters["status"]);
-        }
-        if (!empty($filters["search"])) {
-            $search = $filters["search"];
-            $query->where(function($q) use ($search) {
-                $q->where("title", "like", "%$search%")
-                  ->orWhere("abstract", "like", "%$search%");
-            });
-        }
-
-        \Log::info('AdminlistAllArticles - raw SQL', [
-            'sql' => $query->toSql(),
-            'bindings' => $query->getBindings(),
-            'count_matching' => $query->count(),
-        ]);
-
-        \Log::info('AdminlistAllArticles - paginated result', [
-            'total' => $articles->total(),
-            'per_page' => $articles->perPage(),
-            'current_page' => $articles->currentPage(),
-            'last_page' => $articles->lastPage(),
-        ]);
-
-        return response()->json($articles, 200);
-    } catch (\Throwable $e) {
-        \Log::error('AdminlistAllArticles failed', [
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-
-        return response()->json([
-            'error' => 'Failed to fetch articles',
-            'message' => $e->getMessage(),
-        ], 500);
-    }
-}
-
-public function AdminAssignReviewers(
-    Request $request,
-    int $id,
-    AdminArticleService $service,
-): JsonResponse {
-    $validated = $request->validate([
-        "reviewers" => ["required", "array"],
-        "reviewers.*" => ["integer"],
-    ]);
-
-    try {
-        $article = $service->assignReviewers($id, $validated["reviewers"]);
-
-        event(new ReviewersAssigned($article, $validated["reviewers"]));
-
-    } catch (InvalidArgumentException $e) {
-        return response()->json([
-            "message" => $e->getMessage(),
-        ], 422);
+        return response()->json($reviewers, 200);
     }
 
-    return response()->json($article, 200);
-}
-
-    /**
-     * Make final decision on an article (admin only).
-     */
-    public function decide(Request $request, int $id): JsonResponse
+    public function AdminlistAllArticles(Request $request, AdminArticleService $service): JsonResponse
     {
-        // Validate input
-        $validated = $request->validate([
-            "status" => "required|string|in:published,rejected",
-        ]);
+        $perPage = (int)$request->get("per_page", 5);
 
-        // Fetch article
-        $article = Article::findOrFail($id);
-
-        // Map string to enum value
-        $statusMap = [
-            "published" => ArticleStatus::PUBLISHED->value,
-            "rejected" => ArticleStatus::REJECTED->value,
+        $filters = [
+            "status" => $request->get("status"), // may be null
+            "search" => $request->get("search"), // may be null
         ];
 
-        $article->status_id = $statusMap[$validated["status"]];
-        $article->save();
+        Log::info("AdminlistAllArticles - incoming filters", $filters);
 
-        return response()->json([
-            "status" => "success",
-            "data" => $article,
-        ], 200);
+        try {
+            $articles = $service->listArticles($perPage, $filters);
+
+            $query = Article::query();
+
+            if (!empty($filters["status"])) {
+                $query->where("status_id", $filters["status"]);
+            }
+
+            if (!empty($filters["search"])) {
+                $search = $filters["search"];
+                $query->where(function ($q) use ($search): void {
+                    $q->where("title", "like", "%$search%")
+                        ->orWhere("abstract", "like", "%$search%");
+                });
+            }
+
+            Log::info("AdminlistAllArticles - raw SQL", [
+                "sql" => $query->toSql(),
+                "bindings" => $query->getBindings(),
+                "count_matching" => $query->count(),
+            ]);
+
+            Log::info("AdminlistAllArticles - paginated result", [
+                "total" => $articles->total(),
+                "per_page" => $articles->perPage(),
+                "current_page" => $articles->currentPage(),
+                "last_page" => $articles->lastPage(),
+            ]);
+
+            return response()->json($articles, 200);
+        } catch (Throwable $e) {
+            Log::error("AdminlistAllArticles failed", [
+                "message" => $e->getMessage(),
+                "trace" => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                "error" => "Failed to fetch articles",
+                "message" => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function AdminAssignReviewers(
+        Request $request,
+        int $id,
+        AdminArticleService $service,
+    ): JsonResponse {
+        $validated = $request->validate([
+            "reviewers" => ["required", "array"],
+            "reviewers.*" => ["integer"],
+        ]);
+
+        try {
+            $article = $service->assignReviewers($id, $validated["reviewers"]);
+
+            // Update article status to UNDER_REVIEW
+            $article->status_id = \App\Enums\ArticleStatus::UNDER_REVIEW->value;
+            $article->save();
+
+            event(new ReviewersAssigned($article, $validated["reviewers"]));
+        } catch (InvalidArgumentException $e) {
+            return response()->json([
+                "message" => $e->getMessage(),
+            ], 422);
+        }
+
+        return response()->json($article, 200);
     }
 
     public function help(ApiDocsService $apiDocs): JsonResponse
@@ -226,36 +202,47 @@ public function AdminAssignReviewers(
                 "roles" => [],
                 "query_params" => [],
             ],
-[
-    "method" => "GET",
-    "path" => "/api/v1/articles/admin/reviewers",
-    "description" => "List all reviewers (admin only). Paginated.",
-    "auth_required" => true,
-    "roles" => ["admin"],
-    "query_params" => [
-        "page" => "integer",
-        "per_page" => "integer",
-        "search" => "string (optional)"
-    ],
-    "response_code" => 200,
-    "response_data" => [
-        "current_page" => "integer",
-        "per_page" => "integer",
-        "total" => "integer",
-        "data" => [
             [
-                "id" => "integer",
-                "name" => "string",
-                "email" => "string",
-                "affiliation" => "string|null",
-                "orcid" => "string|null",
-                "deactivated" => "boolean"
-            ]
-        ]
-    ],
-]
+                "method" => "GET",
+                "path" => "/api/v1/articles/admin/reviewers",
+                "description" => "List all reviewers (admin only). Paginated.",
+                "auth_required" => true,
+                "roles" => ["admin"],
+                "query_params" => [
+                    "page" => "integer",
+                    "per_page" => "integer",
+                    "search" => "string (optional)",
+                ],
+                "response_code" => 200,
+                "response_data" => [
+                    "current_page" => "integer",
+                    "per_page" => "integer",
+                    "total" => "integer",
+                    "data" => [
+                        [
+                            "id" => "integer",
+                            "name" => "string",
+                            "email" => "string",
+                            "affiliation" => "string|null",
+                            "orcid" => "string|null",
+                            "deactivated" => "boolean",
+                        ],
+                    ],
+                ],
+            ],
         ]);
 
-    return response()->json($service->getDocs());
+        return response()->json($service->getDocs());
     }
+public function makeDecision(Request $request, int $id, AdminArticleService $service): JsonResponse
+{
+    $validated = $request->validate([
+        'status' => 'required|string|in:published,rejected_by_admin',
+    ]);
+
+    $response = $service->makeDecision($id, $validated['status']);
+
+    $statusCode = $response['status'] === 'success' ? 200 : 403;
+    return response()->json($response, $statusCode);
+}
 }

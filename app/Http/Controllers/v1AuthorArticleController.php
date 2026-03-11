@@ -199,9 +199,17 @@ class v1AuthorArticleController extends v1Controller
 
         $articles = $service->listMyArticles($authorId, $perPage);
 
+        $data = $articles->map(fn($article) => [
+            "id" => $article->id,
+            "title" => $article->title,
+            "abstract" => $article->abstract,
+            "doi" => $article->doi,
+            "status" => $article->status->name ?? null,
+        ]);
+
         return response()->json([
             "status" => "success",
-            "data" => $articles->items(),
+            "data" => $data,
             "pagination" => [
                 "current_page" => $articles->currentPage(),
                 "per_page" => $articles->perPage(),
@@ -243,7 +251,7 @@ class v1AuthorArticleController extends v1Controller
     public function addComment(Request $request, int $id, ArticleCommentService $commentsService): JsonResponse
     {
         $request->validate([
-            "comment" => "required|string",
+            "comment" => "required|string|max:5000",
         ]);
 
         $comment = $commentsService->addComment($id, $request->user()->id, $request->input("comment"));

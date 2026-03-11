@@ -185,16 +185,14 @@ if (roles.includes("author")) {
     if (roles.includes("reviewer")) {
         sections.push({
             buttons: [
-                {
-                    label: "Assigned Reviews",
-                    icon: "fa-solid fa-tasks",
-                    onClick: callbacks.assignedReviews
-                },
-                {
-                    label: "Review History",
-                    icon: "fa-solid fa-history",
-                    onClick: callbacks.reviewHistory
+{
+                label: "Assigned Reviews",
+                icon: "fa-solid fa-tasks",
+                onClick: async () => {
+                    const module = await import("./reviewers_assigned.js");
+                    module.renderAssigned();
                 }
+            }
             ]
         });
     }

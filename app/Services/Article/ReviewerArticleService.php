@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Article;
 
+use App\Enums\ArticleStatus;
+use App\Models\Article;
+use App\Models\User;
+use Illuminate\Pagination\LengthAwarePaginator;
+
 class ReviewerArticleService extends BaseArticleService
 {
     public function assignedArticles(User $user, int $perPage = 10): LengthAwarePaginator
@@ -54,7 +59,13 @@ class ReviewerArticleService extends BaseArticleService
 
     public function assignedArticle(User $user, int $id): ?array
     {
-        $article = Article::with(["authors", "status", "citations", "citedBy"])
+        $article = Article::with([
+            "authors",
+            "status",
+            "citations",
+            "citedBy",
+            "comments.user",
+        ])
             ->whereHas("reviewers", fn($q) => $q->where("users.id", $user->id))
             ->find($id);
 
@@ -96,6 +107,17 @@ class ReviewerArticleService extends BaseArticleService
                 "title" => $c->title,
                 "doi" => $c->doi,
             ])->values(),
+
+            "comments" => $article->comments->map(fn($comment) => [
+                "id" => $comment->id,
+                "comment" => $comment->comment,
+                "created_at" => $comment->created_at,
+                "user" => [
+                    "id" => $comment->user->id,
+                    "name" => $comment->user->name,
+                    "email" => $comment->user->email,
+                ],
+            ])->values(),
         ];
     }
 
@@ -126,5 +148,26 @@ class ReviewerArticleService extends BaseArticleService
         event(new ReviewSubmitted($review));
 
         return $review->load("reviewer");
+    }
+
+    public function submitReviewDecision(int $reviewerId, int $articleId, string $decision): Article
+    {
+        $article = Article::with("reviewers")->findOrFail($articleId);
+
+        // upewnij się, że recenzent jest przypisany
+        if (!$article->reviewers->contains($reviewerId)) {
+            throw new InvalidArgumentException("You are not assigned to review this article.");
+        }
+
+        $status = match($decision) {
+            "accepted" => ArticleStatus::ACCEPTED,
+            "rejected" => ArticleStatus::REJECTED,
+            default => throw new InvalidArgumentException("Invalid decision"),
+        };
+
+        $article->status_id = $status->value;
+        $article->save();
+
+        return $article->load(["authors", "status", "citations", "citedBy", "comments.user"]);
     }
 }

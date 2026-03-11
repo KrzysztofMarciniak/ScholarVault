@@ -1,6 +1,7 @@
 // admin_list_articles.js
 import { createContentContainer } from "./layout.js";
 import { getToken } from "./get_token.js";
+import { notifySuccess, notifyError } from "./notification.js";
 
 /** Fetch paginated admin articles with optional filters */
 async function fetchAdminArticles({ page = 1, perPage = 10, status = null, search = "" } = {}) {
@@ -13,6 +14,27 @@ async function fetchAdminArticles({ page = 1, perPage = 10, status = null, searc
   const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(payload.message || payload.error || res.statusText);
+  return payload;
+}
+
+/** Submit admin decision for an article */
+async function submitAdminDecision(articleId, status) {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const url = `/api/v1/articles/admin/decide/${articleId}`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.message || res.statusText);
   return payload;
 }
 
@@ -60,15 +82,22 @@ function renderArticleSidebar(container, article) {
         Keywords: ${article.keywords?.join(", ") || "N/A"}
       </div>
       <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-        Status: ${article.status || "N/A"}
+        Status: <span class="admin-article-status font-medium">${article.status || "N/A"}</span>
       </div>
       <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
         <strong>Assigned Reviewers:</strong>
         ${reviewersHTML}
       </div>
+      <div id="adminActionButtons" class="mt-4 flex gap-2"></div>
     </div>
   `;
 
+  // Only render decision buttons if status is "Accepted"
+  if (article.status?.toLowerCase() === "accepted") {
+    renderAdminDecisionButtons(container, article);
+  }
+
+  // Assign reviewers button (optional)
   if (article.id) {
     const assignBtn = document.createElement("button");
     assignBtn.textContent = "Assign Reviewers";
@@ -83,6 +112,69 @@ function renderArticleSidebar(container, article) {
     });
     container.appendChild(assignBtn);
   }
+}
+
+
+/** Add admin decision buttons to sidebar */
+function renderAdminDecisionButtons(container, article) {
+  const btnContainer = container.querySelector("#adminActionButtons");
+  btnContainer.innerHTML = "";
+
+  const publishBtn = document.createElement("button");
+  publishBtn.innerHTML = `<i class="fa-solid fa-upload mr-2"></i>Publish`;
+  publishBtn.className = "px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-2";
+
+  const rejectBtn = document.createElement("button");
+  rejectBtn.innerHTML = `<i class="fa-solid fa-ban mr-2"></i>Reject (admin)`;
+  rejectBtn.className = "px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded flex items-center gap-2";
+
+  const statusEl = container.querySelector(".admin-article-status");
+
+  const setUiPending = (isPending) => {
+    publishBtn.disabled = isPending;
+    rejectBtn.disabled = isPending;
+    [publishBtn, rejectBtn].forEach(b => {
+      if (isPending) b.classList.add("opacity-60", "cursor-not-allowed");
+      else b.classList.remove("opacity-60", "cursor-not-allowed");
+    });
+  };
+
+  publishBtn.addEventListener("click", async () => {
+    if (!confirm("Publish this article? This action cannot be undone by reviewers.")) return;
+    setUiPending(true);
+    try {
+      const res = await submitAdminDecision(article.id, "published");
+      article.status = res.new_status_name || "Published";
+      if (statusEl) statusEl.textContent = article.status;
+      notifySuccess("Article published.");
+      window.dispatchEvent(new CustomEvent("admin:article-updated", { detail: { articleId: article.id } }));
+    } catch (err) {
+      console.error("Publish failed:", err);
+      notifyError(err.message || "Publish failed");
+    } finally {
+      setUiPending(false);
+    }
+  });
+
+  rejectBtn.addEventListener("click", async () => {
+    if (!confirm("Reject this article (admin)?")) return;
+    setUiPending(true);
+    try {
+      const res = await submitAdminDecision(article.id, "rejected_by_admin");
+      article.status = res.new_status_name || "Rejected by Admin";
+      if (statusEl) statusEl.textContent = article.status;
+      notifySuccess("Article rejected (admin).");
+      window.dispatchEvent(new CustomEvent("admin:article-updated", { detail: { articleId: article.id } }));
+    } catch (err) {
+      console.error("Reject failed:", err);
+      notifyError(err.message || "Reject failed");
+    } finally {
+      setUiPending(false);
+    }
+  });
+
+  btnContainer.appendChild(publishBtn);
+  btnContainer.appendChild(rejectBtn);
 }
 
 /** Render admin articles list + sidebar */
@@ -129,7 +221,10 @@ export async function renderAdminArticles({ page = 1, perPage = 10, filters = {}
   const statusEl = wrapper.querySelector("#adminStatusFilter");
   const filterBtn = wrapper.querySelector("#adminFilterBtn");
 
+  let currentPage = 1;
+
   async function loadArticles(page = 1) {
+    currentPage = page;
     listEl.innerHTML = `<div class="py-6 text-center text-gray-500 dark:text-gray-400">
       <i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading articles...
     </div>`;
@@ -157,7 +252,6 @@ export async function renderAdminArticles({ page = 1, perPage = 10, filters = {}
         listEl.appendChild(item);
       });
 
-      // Render first article by default
       renderArticleSidebar(sidebarEl, articles[0]);
 
       // Pagination buttons
@@ -177,6 +271,7 @@ export async function renderAdminArticles({ page = 1, perPage = 10, filters = {}
   }
 
   filterBtn.addEventListener("click", () => loadArticles(1));
+  window.addEventListener("admin:article-updated", () => loadArticles(currentPage));
 
   await loadArticles(1);
 }

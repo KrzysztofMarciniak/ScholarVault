@@ -32,17 +32,13 @@ class Article extends Model
 
     public function reviewers()
     {
-        return $this->belongsToMany(User::class, "article_user")
-            ->withTimestamps()
-            ->where("role_id", Role::REVIEWER);
+        return $this->belongsToMany(User::class, "article_reviewer")
+            ->withTimestamps();
     }
 
-    // Multiple authors
     public function authors()
     {
-        return $this->belongsToMany(User::class, "article_user")
-            ->withPivot("is_primary")
-            ->withTimestamps();
+        return $this->belongsToMany(User::class, "article_user");
     }
 
     // Articles this article cites

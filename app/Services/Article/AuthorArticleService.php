@@ -44,7 +44,7 @@ class AuthorArticleService extends BaseArticleService
         return Article::whereHas("authors", function ($query) use ($authorId): void {
             $query->where("user_id", $authorId);
         })
-            ->join("article_statuses as s", "articles.status_id", "=", "s.id")
+            ->leftJoin("article_statuses as s", "articles.status_id", "=", "s.id")
             ->select(
                 "articles.id",
                 "articles.title",
@@ -52,6 +52,7 @@ class AuthorArticleService extends BaseArticleService
                 "articles.doi",
                 "s.name as status",
             )
+            ->distinct("articles.id") // ensures duplicates from joins don’t break pagination
             ->paginate($perPage);
     }
 
