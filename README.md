@@ -19,6 +19,8 @@ This combination ensures a modern, performant, and maintainable frontend that al
 Home Page
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5b05206a-ffa7-4ea5-9bb6-a81cd029b7b5" />
 #### User
+Notifications:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/4c8a74ba-0403-4087-9182-f7bc9491368d" />
 
 Login Page:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e22d8b8d-fedd-451f-a78a-ae1581b520a9" />
@@ -53,6 +55,9 @@ Comment Page and before revision:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/37c4a844-e6f5-4bd7-9a71-5db67d859696" />
 After revision:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c1cf28b4-e24f-4774-a749-4e155fae3f9d" />
+### Admin
+All Articles Page:
+
 
 
 ### Router
