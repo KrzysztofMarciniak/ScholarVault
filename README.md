@@ -41,8 +41,11 @@ User Creation Page (Admin version has less requirements):
 Admin Controls User Controls Page:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/49053260-8a75-435b-b515-2958359e7e44" />
 
-
 #### Article
+### Author
+Submit Article Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/488a68c2-4bf9-422c-b506-ae9d64a25926" />
+
 ### Router
 ### Models
 ### Controllers
