@@ -77,6 +77,74 @@ Assigned Article Details:
 
 
 ### Router
+#### `api.php` (API routes `/api/v1/...`)
+
+* **Prefix:** `/api/v1`
+* **Purpose:** Handles all RESTful API endpoints for authentication, users, articles, notifications, and testing utilities.
+
+##### **Notifications**
+
+* `/notifications/check` – GET, check new notifications
+* `/notifications/read/{id}` – PATCH, mark single notification read
+* `/notifications/read-all` – PATCH, mark all notifications read
+* **Middleware:** `auth:sanctum`
+
+##### **Articles**
+
+* **Public:** `/articles/` – list and show articles
+* **Author (Role::AUTHOR):**
+
+  * Submit: `/articles/submit` – POST
+  * List own articles: `/articles/my/list` – GET
+  * View own article: `/articles/my/{id}` – GET
+  * Comments (list/add): `/articles/my/comments/{id}` – GET/POST
+  * Submit revision: `/articles/my/revision/{id}` – POST
+* **Reviewer (Role::REVIEWER):**
+
+  * Assigned articles: `/articles/assigned` – GET
+  * View assigned article: `/articles/assigned/{id}` – GET
+  * Comment/review: `/articles/assigned/comment/{id}` and `/articles/assigned/{id}/review` – POST
+  * Make decision: `/articles/assigned/decide/{id}` – POST
+* **Admin (Role::ADMINISTRATOR):**
+
+  * List all articles: `/articles/admin/` – GET
+  * List reviewers: `/articles/admin/reviewers` – GET
+  * Assign reviewers: `/articles/admin/reviewers/{id}` – PATCH
+  * Accept/reject: `/articles/admin/decide/{id}` – PATCH
+
+##### **Registration & Authentication**
+
+* `/register/` – POST, blocked if authenticated
+* `/login/` – POST, blocked if authenticated
+* `/login/logout` – POST, requires auth
+* `/register/help` & `/login/help` – GET
+
+##### **Users**
+
+* Public: list, search, show
+* Authenticated self: update, password change, deactivate, profile info
+* Admin: create, update, deactivate
+
+##### **Testing Utilities**
+
+* `/test/` – GET index
+* `/test/sanitization` – POST test middleware
+
+---
+
+#### `web.php` (SPA entry point)
+
+* **Purpose:** Serves the SPA page at `/`
+* **Route:** `Route::get("/", fn() => view("spa"));`
+* **Note:** All client-side routing handled by the SPA; API calls go through `/api/v1/...`.
+
+#### Conclusion
+
+1. **API-first design:** All data operations via `/api/v1` with proper role-based access.
+2. **SPA serving:** Single route for front-end with client-side routing.
+3. **Scalability:** Role-specific middleware isolates permissions cleanly.
+4. **Maintainability:** Clear endpoint grouping (`author`, `reviewer`, `admin`).
+
 ### Models
 ### Controllers
 ### Services
