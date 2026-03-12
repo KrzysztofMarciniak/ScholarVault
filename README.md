@@ -1,5 +1,27 @@
-# Project
-Scientific publishing web engine built with Laravel.
+# ScholarVault
+## Introduction
+ScholarVault is a web based platform for publishing and managing scientific articles. It provides user account creation and management, enables authors to submit and revise articles, and allows reviewers to provide feedback to improve submissions. Administrators oversee the process and can make final decisions to publish articles.
+### Motivation
+There is a clear shortage of open-source, high-performance SPA (Single Page Application) engines specifically tailored for scientific publishing workflows, making ScholarVault a solution that addresses this gap efficiently.
+### Technologies
+**Backend: Laravel 12 API**
+Laravel 12 was selected for its rapid development capabilities, robust ecosystem, built-in authentication and authorization features, and seamless support for RESTful APIs. Its expressive syntax and active community make it ideal for building a secure and maintainable backend for ScholarVault.
+**Frontend: SPA with Axios, TailwindCSS, and Font Awesome**
+* **Axios** is used for efficient HTTP requests and API integration.
+* **TailwindCSS** allows for rapid, utility-first styling with consistent design and easy customization.
+* **Font Awesome** provides a comprehensive icon library to improve UI clarity and usability.
+This combination ensures a modern, performant, and maintainable frontend that aligns with the backend API for fast and interactive article management.
+## Implementation
+### Functionality
+#### User
+#### Article
+### Router
+### Models
+### Controllers
+### Services
+
+
+
 ---
 ## Stack
 Built with:
