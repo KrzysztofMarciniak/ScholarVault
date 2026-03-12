@@ -15,6 +15,7 @@ Laravel 12 was selected for its rapid development capabilities, robust ecosystem
 * **Font Awesome** provides a comprehensive icon library to improve UI clarity and usability.
 This combination ensures a modern, performant, and maintainable frontend that aligns with the backend API for fast and interactive article management.
 ## Implementation
+The typical workflow begins with an author registering on the platform and submitting a new article. The author can then collaborate with assigned reviewers (Administrator assigns them), addressing feedback and submitting revisions as needed. Once the review process is complete (accepted), administrators make the final decision to either publish or reject the article, ensuring quality and compliance with platform standards.
 ### Functionality
 Home Page
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5b05206a-ffa7-4ea5-9bb6-a81cd029b7b5" />
@@ -44,6 +45,9 @@ Admin Controls User Controls Page:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/49053260-8a75-435b-b515-2958359e7e44" />
 
 #### Article
+Published Article Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f715c02f-a7e0-4f2c-b7ed-0db76d4e5bb1" />
+
 ### Author
 Submit Article Page:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/488a68c2-4bf9-422c-b506-ae9d64a25926" />
@@ -60,11 +64,15 @@ All Articles Page:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/13f75f0a-de41-417d-87d7-d03b47c06afe" />
 Assign Reviewer Page:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8574c785-4def-4cde-a3f1-9f36f9acc54e" />
+Publish Accepted Article Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ba36655a-b60c-440d-adda-209edefee350" />
+
+
 ### Reviewer
 All Assigned Articles Page:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7d542aca-8b49-4b84-af46-0ceaec64a02e" />
 Assigned Article Details:
-![Uploading image.png…]()
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8262be85-471b-4848-a4ad-ebe46538398d" />
 
 
 
