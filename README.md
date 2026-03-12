@@ -45,6 +45,11 @@ Admin Controls User Controls Page:
 ### Author
 Submit Article Page:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/488a68c2-4bf9-422c-b506-ae9d64a25926" />
+My Articles Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3b157249-0fc7-4789-bf29-ef4dfb49f374" />
+My Article Details Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/fcba6e8f-6c48-4ace-8175-e4c432687b74" />
+
 
 ### Router
 ### Models
