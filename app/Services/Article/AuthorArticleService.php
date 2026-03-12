@@ -8,10 +8,10 @@ use App\Enums\ArticleStatus;
 use App\Events\ArticleSubmitted;
 use App\Models\Article;
 use App\Models\ArticleComment;
+use Exception;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\UploadedFile as IlluminateUploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Exception;
 
 class AuthorArticleService extends BaseArticleService
 {
@@ -23,7 +23,7 @@ class AuthorArticleService extends BaseArticleService
         string $title,
         string $abstract,
         IlluminateUploadedFile $file,
-        ?array $keywords = null
+        ?array $keywords = null,
     ): Article {
         $filename = $file->store("articles", "public");
 

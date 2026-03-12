@@ -120,13 +120,14 @@ class Article extends Model
         return $this->hasMany(ArticleFile::class)
             ->orderByDesc("version_number");
     }
+
     public function latestFile(): ?ArticleFile
     {
         return $this->files()->first();
     }
 
-public function latestFileOfMany(): HasOne
-{
-    return $this->hasOne(ArticleFile::class)->latestOfMany('version_number');
-}
+    public function latestFileOfMany(): HasOne
+    {
+        return $this->hasOne(ArticleFile::class)->latestOfMany("version_number");
+    }
 }

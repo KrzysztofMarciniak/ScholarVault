@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Article;
 
 use Illuminate\Database\Eloquent\Builder;
@@ -19,7 +21,7 @@ trait ArticleQueryTrait
         if (!empty($filters["search"])) {
             $search = $filters["search"];
             $query->where(fn($q) => $q->where("title", "like", "%$search%")
-                                        ->orWhere("abstract", "like", "%$search%"));
+                ->orWhere("abstract", "like", "%$search%"));
         }
 
         return $query;
@@ -32,6 +34,7 @@ trait ArticleQueryTrait
         } else {
             $query->orderByDesc("created_at");
         }
+
         return $query;
     }
 }

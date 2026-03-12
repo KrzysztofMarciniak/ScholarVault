@@ -193,54 +193,54 @@ class v1AuthorArticleController extends v1Controller
     }
 
     public function myArticles(Request $request, AuthorArticleService $service): JsonResponse
-    {
-        $authorId = $request->user("sanctum")->id;
-        $perPage = (int)$request->query("per_page", 10);
-
-        $articles = $service->listMyArticles($authorId, $perPage);
-
-        $data = $articles->map(fn($article) => [
-            "id" => $article->id,
-            "title" => $article->title,
-            "abstract" => $article->abstract,
-            "doi" => $article->doi,
-            "status" => $article->status->name ?? null,
-        ]);
-
-        return response()->json([
-            "status" => "success",
-            "data" => $data,
-            "pagination" => [
-                "current_page" => $articles->currentPage(),
-                "per_page" => $articles->perPage(),
-                "total" => $articles->total(),
-                "last_page" => $articles->lastPage(),
-            ],
-        ]);
-    }
-
-public function myArticle(Request $request, int $id, AuthorArticleService $service): JsonResponse
 {
-    $authorId = $request->user()->id;
+    $authorId = $request->user("sanctum")->id;
+    $perPage = (int)$request->query("per_page", 10);
 
-    $article = $service->viewMyArticle($authorId, $id);
+    $articles = $service->listMyArticles($authorId, $perPage);
 
-    if ($article === null) {
-        return response()->json([
-            "message" => "Article not found or you do not have access.",
-        ], 404);
-    }
+    $data = $articles->getCollection()->map(fn($article) => [
+        "id" => $article['id'] ?? null,
+        "title" => $article['title'] ?? null,
+        "abstract" => $article['abstract'] ?? null,
+        "doi" => $article['doi'] ?? null,
+        "status" => $article['status'] ?? null,
+    ])->values();
 
-    $latestFile = $article['files'][0] ?? null;
-    if ($latestFile) {
-        $article['filename'] = $latestFile['filename'];
-        $article['file_type'] = $latestFile['file_type'];
-        $article['version_number'] = $latestFile['version_number'];
-    }
-
-    return response()->json($article, 200);
+    return response()->json([
+        "status" => "success",
+        "data" => $data,
+        "pagination" => [
+            "current_page" => $articles->currentPage(),
+            "per_page" => $articles->perPage(),
+            "total" => $articles->total(),
+            "last_page" => $articles->lastPage(),
+        ],
+    ]);
 }
 
+    public function myArticle(Request $request, int $id, AuthorArticleService $service): JsonResponse
+    {
+        $authorId = $request->user()->id;
+
+        $article = $service->viewMyArticle($authorId, $id);
+
+        if ($article === null) {
+            return response()->json([
+                "message" => "Article not found or you do not have access.",
+            ], 404);
+        }
+
+        $latestFile = $article["files"][0] ?? null;
+
+        if ($latestFile) {
+            $article["filename"] = $latestFile["filename"];
+            $article["file_type"] = $latestFile["file_type"];
+            $article["version_number"] = $latestFile["version_number"];
+        }
+
+        return response()->json($article, 200);
+    }
 
     public function listComments(Request $request, int $id, AuthorArticleService $commentsService): JsonResponse
     {

@@ -14,13 +14,14 @@ use Illuminate\Http\Request;
 
 class v1ReviewerArticleController extends v1Controller
 {
-public function assignedArticles(Request $request, ReviewerArticleService $service): JsonResponse
-{
-    $user = $request->user();
-    $articles = $service->assignedArticles($user, 10);
+    public function assignedArticles(Request $request, ReviewerArticleService $service): JsonResponse
+    {
+        $user = $request->user();
+        $articles = $service->assignedArticles($user, 10);
 
-    return response()->json($articles, 200);
-}
+        return response()->json($articles, 200);
+    }
+
     public function leaveComment(Request $request, int $id, ReviewerArticleService $service): JsonResponse
     {
         $user = $request->user();
@@ -37,6 +38,7 @@ public function assignedArticles(Request $request, ReviewerArticleService $servi
         ]);
 
         $articleId = $article["id"] ?? null;
+
         if (!$articleId) {
             return response()->json([
                 "message" => "Invalid article data.",
@@ -64,11 +66,12 @@ public function assignedArticles(Request $request, ReviewerArticleService $servi
         }
 
         // Override top-level filename/file_type with latest file
-        $latestFile = $article['files'][0] ?? null;
+        $latestFile = $article["files"][0] ?? null;
+
         if ($latestFile) {
-            $article['filename'] = $latestFile['filename'];
-            $article['file_type'] = $latestFile['file_type'];
-            $article['version_number'] = $latestFile['version_number'];
+            $article["filename"] = $latestFile["filename"];
+            $article["file_type"] = $latestFile["file_type"];
+            $article["version_number"] = $latestFile["version_number"];
         }
 
         return response()->json($article, 200);
@@ -130,7 +133,6 @@ public function assignedArticles(Request $request, ReviewerArticleService $servi
             "new_status" => $article->status_id,
         ]);
     }
-
 
     public function help(ApiDocsService $apiDocs): JsonResponse
     {
@@ -275,5 +277,4 @@ public function assignedArticles(Request $request, ReviewerArticleService $servi
 
         return response()->json($apiDocs->getDocs());
     }
-
 }

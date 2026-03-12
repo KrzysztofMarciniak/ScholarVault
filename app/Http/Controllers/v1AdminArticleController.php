@@ -6,7 +6,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\ArticleStatus;
 use App\Events\ReviewersAssigned;
-use App\Models\Article;
 use App\Services\ApiDocsService;
 use App\Services\Article\AdminArticleService;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +16,6 @@ use Throwable;
 
 class v1AdminArticleController extends v1Controller
 {
-
     public function help(ApiDocsService $apiDocs): JsonResponse
     {
         $apiDocs->addEndpoints([
@@ -143,7 +141,7 @@ class v1AdminArticleController extends v1Controller
         return response()->json($service->getDocs());
     }
 
-        public function listReviewers(Request $request, AdminArticleService $service): JsonResponse
+    public function listReviewers(Request $request, AdminArticleService $service): JsonResponse
     {
         $perPage = (int)$request->get("per_page", 10);
         $search = $request->get("search");
@@ -154,39 +152,39 @@ class v1AdminArticleController extends v1Controller
     }
 
     public function AdminlistAllArticles(Request $request, AdminArticleService $service): JsonResponse
-{
-    $perPage = (int)$request->get("per_page", 5);
+    {
+        $perPage = (int)$request->get("per_page", 5);
 
-    $filters = [
-        "status" => $request->get("status"),
-        "search" => $request->get("search"),
-    ];
+        $filters = [
+            "status" => $request->get("status"),
+            "search" => $request->get("search"),
+        ];
 
-    Log::info("AdminlistAllArticles - incoming filters", $filters);
+        Log::info("AdminlistAllArticles - incoming filters", $filters);
 
-    try {
-        $articles = $service->listArticles($perPage, $filters);
+        try {
+            $articles = $service->listArticles($perPage, $filters);
 
-        Log::info("AdminlistAllArticles - paginated result", [
-            "total" => $articles->total(),
-            "per_page" => $articles->perPage(),
-            "current_page" => $articles->currentPage(),
-            "last_page" => $articles->lastPage(),
-        ]);
+            Log::info("AdminlistAllArticles - paginated result", [
+                "total" => $articles->total(),
+                "per_page" => $articles->perPage(),
+                "current_page" => $articles->currentPage(),
+                "last_page" => $articles->lastPage(),
+            ]);
 
-        return response()->json($articles, 200);
-    } catch (Throwable $e) {
-        Log::error("AdminlistAllArticles failed", [
-            "message" => $e->getMessage(),
-            "trace" => $e->getTraceAsString(),
-        ]);
+            return response()->json($articles, 200);
+        } catch (Throwable $e) {
+            Log::error("AdminlistAllArticles failed", [
+                "message" => $e->getMessage(),
+                "trace" => $e->getTraceAsString(),
+            ]);
 
-        return response()->json([
-            "error" => "Failed to fetch articles",
-            "message" => $e->getMessage(),
-        ], 500);
+            return response()->json([
+                "error" => "Failed to fetch articles",
+                "message" => $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
     public function AdminAssignReviewers(Request $request, int $id, AdminArticleService $service): JsonResponse
     {
@@ -210,6 +208,7 @@ class v1AdminArticleController extends v1Controller
 
         // Attach latest file if exists
         $latestFile = $article->latestFile();
+
         if ($latestFile) {
             $article->filename = $latestFile->filename;
             $article->file_type = $latestFile->file_type;

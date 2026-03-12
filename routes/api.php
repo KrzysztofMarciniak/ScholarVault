@@ -16,7 +16,6 @@ use App\Http\Middleware\BlockIfAuthenticated;
 use App\Models\Role;
 use Illuminate\Support\Facades\Route;
 
-
 // --- /api/v1/ ---
 Route::prefix("v1")->group(function (): void {
     // -----------------------

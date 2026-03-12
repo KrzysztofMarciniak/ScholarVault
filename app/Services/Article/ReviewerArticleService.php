@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Services\Article;
 
 use App\Enums\ArticleStatus;
-use App\Models\Article;
-use App\Models\User;
-use App\Models\Review;
 use App\Events\ReviewSubmitted;
+use App\Models\Article;
+use App\Models\Review;
+use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
+use InvalidArgumentException;
 
 class ReviewerArticleService extends BaseArticleService
 {
@@ -41,7 +42,7 @@ class ReviewerArticleService extends BaseArticleService
             "comments.user",
             "files",
         ])->whereHas("reviewers", fn($q) => $q->where("users.id", $user->id))
-          ->find($id);
+            ->find($id);
 
         if (!$article) {
             return null;
@@ -71,7 +72,7 @@ class ReviewerArticleService extends BaseArticleService
                 "article_id" => $article->id,
                 "reviewer_id" => $user->id,
             ],
-            $validated
+            $validated,
         );
 
         event(new ReviewSubmitted($review));
@@ -87,13 +88,13 @@ class ReviewerArticleService extends BaseArticleService
         $article = Article::with("reviewers")->findOrFail($articleId);
 
         if (!$article->reviewers->contains($reviewerId)) {
-            throw new \InvalidArgumentException("You are not assigned to review this article.");
+            throw new InvalidArgumentException("You are not assigned to review this article.");
         }
 
         $status = match($decision) {
             "accepted" => ArticleStatus::ACCEPTED,
             "rejected" => ArticleStatus::REJECTED,
-            default => throw new \InvalidArgumentException("Invalid decision"),
+            default => throw new InvalidArgumentException("Invalid decision"),
         };
 
         $article->status_id = $status->value;
@@ -164,7 +165,7 @@ class ReviewerArticleService extends BaseArticleService
                         "email" => $comment->user->email,
                     ],
                 ])->values(),
-            ]
+            ],
         );
     }
 }
