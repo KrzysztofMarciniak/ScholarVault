@@ -130,8 +130,6 @@ Assigned Article Details:
 * `/test/` – GET index
 * `/test/sanitization` – POST test middleware
 
----
-
 #### `web.php` (SPA entry point)
 
 * **Purpose:** Serves the SPA page at `/`
@@ -144,8 +142,107 @@ Assigned Article Details:
 2. **SPA serving:** Single route for front-end with client-side routing.
 3. **Scalability:** Role-specific middleware isolates permissions cleanly.
 4. **Maintainability:** Clear endpoint grouping (`author`, `reviewer`, `admin`).
+Here’s a concise structured summary of your models and their relationships based on the code you provided:
 
-### Models
+---
+
+### **Models Overview**
+
+#### 1. `Article`
+
+* **Relationships:**
+
+  * `status()` → `ArticleStatus` (belongsTo)
+  * `reviewers()` → `User` (many-to-many via `article_reviewer`)
+  * `authors()` → `User` (many-to-many via `article_user`)
+  * `citations()` → `Article` (self-referencing many-to-many)
+  * `citedBy()` → `Article` (inverse self-referencing many-to-many)
+  * `comments()` → `ArticleComment` (hasMany)
+  * `files()` → `ArticleFile` (hasMany, ordered by version)
+
+* **Scopes & Helpers:**
+
+  * `scopeAuthoredBy($authorId)` – filter articles by author
+  * `latestFile()` / `latestFileOfMany()` – retrieve most recent uploaded file
+  * `toAuthorDetailArray()` – array representation for author view, includes authors, citations, files
+
+#### 2. `ArticleComment`
+
+* **Relationships:**
+
+  * `article()` → `Article` (belongsTo)
+  * `user()` → `User` (belongsTo)
+* **Purpose:** Stores comments for articles
+
+#### 3. `ArticleFile`
+
+* **Relationships:**
+
+  * `article()` → `Article` (belongsTo)
+  * `uploader()` → `User` (belongsTo via `uploaded_by`)
+* **Purpose:** Stores uploaded files and revisions for articles
+
+#### 4. `ArticleReviewer`
+
+* **Purpose:** Pivot table `article_reviewer` linking `Article` ↔ `User`
+
+#### 5. `ArticleStatus`
+
+* **Relationships:**
+
+  * `articles()` → `Article` (hasMany)
+* **Purpose:** Defines statuses like “submitted”, “under review”, “accepted”, “rejected”
+
+#### 6. `Notification`
+
+* **Relationships:**
+
+  * `user()` → `User` (belongsTo)
+* **Helpers:**
+
+  * `forUser($user, $onlyUnread)` – fetch notifications for a user
+  * `unreadCount($user)` – count unread notifications
+
+#### 7. `Review`
+
+* **Relationships:**
+
+  * `article()` → `Article` (belongsTo)
+  * `reviewer()` → `User` (belongsTo via `reviewer_id`)
+* **Purpose:** Stores reviewer comments per article
+
+#### 8. `Role`
+
+* **Constants:** `AUTHOR=1`, `REVIEWER=2`, `ADMINISTRATOR=3`
+* **Relationships:** `users()` → `User` (hasMany)
+
+#### 9. `User`
+
+* **Relationships:**
+
+  * `role()` → `Role` (belongsTo)
+  * `articles()` → `Article` (hasMany via `author_id`)
+  * `reviews()` → `Review` (hasMany via `reviewer_id`)
+* **Mutators & Accessors:**
+
+  * `setPasswordAttribute()` – auto-hash
+  * `getDisplayNameAttribute()` – fallback to email
+* **Helpers:**
+
+  * `isAuthor()`, `isReviewer()`, `isAdministrator()`
+  * `activate()`, `deactivate()`, `canBeDeactivated()`
+  * `assignRole($roleId)`
+* **Scopes:** `active()`, `search()`, `withRoleName()`
+* **Array Representations:** `toListArray()`, `toSearchArray()`, `toProfileArray()`
+
+#### Conclusion
+
+1. **Author-Reviewer-Admin workflow** is supported via pivot tables (`article_user`, `article_reviewer`) and the `Role` model.
+2. **Articles have versioned files**; latest is easily accessible (`latestFile()`).
+3. **Notifications** are scoped to users and track read/unread.
+4. **User deactivation logic** is robust: admins cannot deactivate the last active admin.
+5. **Self-contained helpers** allow conversion to array representations suitable for API responses.
+
 ### Controllers
 ### Services
 
