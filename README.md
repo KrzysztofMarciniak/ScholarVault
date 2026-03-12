@@ -52,7 +52,7 @@ My Article Details Page:
 Comment Page and before revision:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/37c4a844-e6f5-4bd7-9a71-5db67d859696" />
 After revision:
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/79f53541-9061-423d-b78b-ae29040ae457" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c1cf28b4-e24f-4774-a749-4e155fae3f9d" />
 
 
 ### Router
