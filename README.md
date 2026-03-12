@@ -35,6 +35,12 @@ Deactivate Account Page:
 All Users Page:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7356cc4c-a855-4120-97a7-d7d2ad6a5bfe" />
 User Search Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f9abc38f-fd96-4a2c-b4df-1b10f6847372" />
+User Creation Page (Admin version has less requirements):
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/14d9ed21-5b77-4e4c-a34a-e237637a9fc4" />
+Admin Controls User Controls Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/49053260-8a75-435b-b515-2958359e7e44" />
+
 
 #### Article
 ### Router
