@@ -256,141 +256,289 @@ Assigned Article Details:
 
 #### 3. `v1TestController`
 
-* Extends `v1Controller`.
-* **Endpoints:**
+- Extends `v1Controller`.
+- **Functions:**
 
-  * `GET /api/v1/test` → `index()` - returns a basic success message to confirm API is working.
-  * `GET /api/v1/test/help` → `help(ApiDocsService)` - documents the test endpoint in the API docs.
-
+  ##### `index() : JsonResponse`
+  - Returns a basic success message confirming that the API is working.
+  - **Purpose:** Provides a quick check to verify that version 1 of the API is functioning.
+    
 #### 4. `v1TestMiddlewareSanitization`
 
-* Extends `v1Controller`.
-* **Endpoints:**
+- Extends `v1Controller`.
+- **Functions:**
 
-  * `POST /api/v1/test/sanitization` → `index(Request)` - returns raw and sanitized request body for fields `email` and `password`.
-  * `GET /api/v1/test/sanitization/help` → `help(ApiDocsService)` - documents expected request structure and response.
-* **Purpose:** Test request sanitization middleware.
+  #### `index(Request $request) : JsonResponse`
+  - Returns both the raw request body and the sanitized subset containing only `email` and `password`.
+  - **Purpose:** Tests the request sanitization middleware by showing what comes raw from the client and what remains after sanitation.
+
 
 #### 5. `v1LoginController`
+- Extends `Controller`.
+- **Functions:**
+  #### `login(Request $request, AuthService $service) : JsonResponse`
+  - Validates the request for `email` and `password`.
+  - Uses `AuthService` to authenticate the user.
+  - Returns JSON with `token` and `user` data if successful.
+  - Handles exceptions:
+    - `AuthenticationException` → 401 Unauthorized
+    - `RuntimeException` → 403 Forbidden (if code = 403) or 422 Unprocessable
+  - **Purpose:** Authenticates a user and provides an API token for further requests.
 
-* Extends `Controller`.
-* **Endpoints:**
-
-  * `POST /api/v1/login` → `login(Request, AuthService)` - authenticates user, returns API token and user data.
-  * `POST /api/v1/login/logout` → `logout(Request, AuthService)` - revokes current API token, logs out user.
-  * `GET /api/v1/login/help` → `help(ApiDocsService)` - provides API usage instructions for login/logout.
-* **Error Handling:**
-
-  * `AuthenticationException` → 401 Unauthorized
-  * `RuntimeException` → 403 Forbidden (if code = 403) or 422 Unprocessable
+  #### `logout(Request $request, AuthService $service) : JsonResponse`
+  - Revokes the current API token for the authenticated user.
+  - Returns a success message in JSON.
+  - **Purpose:** Logs out the user and invalidates their current API session.
 
 #### 6. `v1RegisterController`
+- Extends `Controller`.
+- **Functions:**
 
-* Extends `Controller`.
-* **Endpoints:**
-
-  * `POST /api/v1/register` → `register(Request, RegistrationService)` - creates a new user. Only assigns the AUTHOR role. Email is normalized to lowercase, password is trimmed.
-  * `GET /api/v1/register/help` → `help(ApiDocsService)` - documents expected request fields and example payload.
-* **Validation:** Ensures required fields (`name`, `email`, `password`) and optional fields (`affiliation`, `orcid`, `bio`) conform to types and constraints.
+  ##### `register(Request $request, RegistrationService $registration) : JsonResponse`
+  - Validates the incoming request for user registration:
+    - `name`: required string, max 255
+    - `email`: required, valid email, unique
+    - `password`: required, string, min 8
+    - Optional: `affiliation`, `orcid`, `bio`
+  - Calls `RegistrationService` to create a new user (AUTHOR role only).
+  - Returns a JSON response with the created user data and HTTP status 201.
+  - **Purpose:** Handles new user registration, ensuring proper validation and role assignment.
 
 #### 7. `v1NotificationController`
 
-* Extends `Controller`.
-* **Endpoints:**
+- Extends `Controller`.
+- **Functions:**
 
-  * `GET /api/v1/notifications` → `check(Request)` - returns all notifications for authenticated user plus unread count.
-  * `PATCH /api/v1/notifications/read/{id}` → `markRead(Request, int)` - marks a single notification as read.
-  * `PATCH /api/v1/notifications/read-all` → `markAllRead(Request)` - marks all notifications as read.
-* **Behavior:** Returns 401 if the user is unauthenticated; returns 404 if the notification does not exist or belongs to another user.
+  ##### `check(Request $request) : JsonResponse`
+  - Retrieves the authenticated user via Sanctum.
+  - Returns JSON containing:
+    - `notifications`: list of notifications for the user
+    - `unread_count`: number of unread notifications
+  - If the user is not authenticated, returns empty notifications and unread count with HTTP 401.
+  - **Purpose:** Allows a user to fetch all their notifications and see how many are unread.
+
+  ##### `markRead(Request $request, int $id) : JsonResponse`
+  - Retrieves the authenticated user.
+  - Finds the notification with the given `id` for that user.
+  - Marks the notification as read if it isn’t already (`read_at = now()`).
+  - Returns JSON with a success message and the notification ID.
+  - Handles errors:
+    - 401 if unauthenticated
+    - 404 if notification not found
+  - **Purpose:** Marks a specific notification as read for the current user.
+
+  ##### `markAllRead(Request $request) : JsonResponse`
+  - Retrieves the authenticated user.
+  - Marks all unread notifications for the user as read.
+  - Returns JSON with a message and the number of notifications updated.
+  - Returns 401 if the user is not authenticated.
+  - **Purpose:** Provides a convenient way for a user to mark all their notifications as read at once.
 
 #### 8. `v1UserController`
 
-* Extends `v1Controller`.
-* **Endpoints:**
+- Extends `v1Controller`.
+- **Functions:**
 
-  * `POST /api/v1/users` → `AdminCreateUser(Request, AdminUserService)` - admin-only user creation.
-  * `GET /api/v1/users` → `AllUsers(Request)` - lists all active users with role info (paginated).
-  * `GET /api/v1/users/search` → `SearchUsers(Request)` - search by name, email, or affiliation. Admins see deactivated users and role info.
-  * `PUT/PATCH /api/v1/users/self` → `AnyUserSelfUpdate(Request, AnyUserService)` - authenticated user updates their own profile.
-  * `PATCH /api/v1/users/{id}` → `AdminUpdateUser(Request, int, AdminUserService)` - admin updates any user.
-  * `DELETE /api/v1/users/self` → `SelfDeactivate(Request, AnyUserService)` - deactivate own account.
-  * `DELETE /api/v1/users/{id}` → `AdminDeactivateUser(int, AnyUserService)` - admin deactivates user.
-  * `PATCH /api/v1/users/self/password` → `SelfChangePassword(Request, AnyUserService)` - authenticated user changes password.
-  * `GET /api/v1/users/{id}` → `show(Request, int)` - retrieves specific user's profile.
-  * `GET /api/v1/users/me` → `DisplaySelf(Request)` - retrieves authenticated user’s profile.
-* **Validation & Security:**
+  ##### `AdminCreateUser(Request $request, AdminUserService $service) : JsonResponse`
+  - Validates admin-provided data for creating a new user.
+  - Calls `AdminUserService` to create the user with the specified role and optional profile fields.
+  - Returns JSON with the created user and HTTP status 201.
+  - **Purpose:** Allows administrators to create new users.
 
-  * Admin-only operations check role.
-  * Unique email checks with exception for self.
-  * Password change requires current password validation.
-* **Response Structure:** All endpoints return consistent `status` and either `data` or `message` keys.
+  ##### `AllUsers(Request $request) : JsonResponse`
+  - Fetches all active users, paginated with optional `per_page` query parameter (max 100).
+  - Includes role names.
+  - **Purpose:** Provides a paginated list of all active users for viewing.
 
+  ##### `AdminUpdateUser(Request $request, int $id, AdminUserService $service) : JsonResponse`
+  - Validates optional update fields for the specified user.
+  - Calls `AdminUserService` to update the user partially (PATCH semantics).
+  - Returns JSON with the updated user data.
+  - **Purpose:** Allows administrators to update any user's profile or role.
+
+  ##### `AnyUserSelfUpdate(Request $request, AnyUserService $service) : JsonResponse`
+  - Validates fields for the authenticated user's profile update.
+  - Calls `AnyUserService` to update the current user.
+  - Returns JSON with updated user data.
+  - **Purpose:** Allows users to update their own profile information.
+
+  ##### `AdminDeactivateUser(int $id, AnyUserService $service) : JsonResponse`
+  - Finds the user by ID and checks if they can be deactivated.
+  - Calls `AnyUserService` to deactivate the user.
+  - Returns JSON with a success or error message.
+  - **Purpose:** Allows administrators to deactivate any user.
+
+  ##### `SelfDeactivate(Request $request, AnyUserService $service) : JsonResponse`
+  - Deactivates the currently authenticated user.
+  - Handles runtime exceptions and returns error if deactivation fails.
+  - **Purpose:** Enables users to deactivate their own accounts.
+
+  ##### `SearchUsers(Request $request) : JsonResponse`
+  - Validates a search query (`q`) and optional `per_page`.
+  - Searches users by name, email, or affiliation.
+  - Admins can see deactivated users and roles; regular users see active users only.
+  - Returns paginated search results.
+  - **Purpose:** Provides a user search feature for both admins and regular users.
+
+  ##### `SelfChangePassword(Request $request, AnyUserService $service) : JsonResponse`
+  - Validates `current_password` and `new_password` (with confirmation).
+  - Checks that `current_password` matches stored hash.
+  - Calls `AnyUserService` to update the password.
+  - Returns JSON success or error messages.
+  - **Purpose:** Allows users to securely change their own password.
+
+  ##### `DisplaySelf(Request $request) : JsonResponse`
+  - Returns the authenticated user's profile in array form.
+  - **Purpose:** Fetch the current user's own profile.
+
+  ##### `show(Request $request, int $id) : JsonResponse`
+  - Returns the specified user's profile in array form.
+  - **Purpose:** Allows retrieval of any user's profile by ID (admin-only or according to permissions).
+  
 #### 9. `v1ArticleController`
 
-* Extends `Controller`.
-* **Purpose:** Public read-only endpoints for published articles.
-* **Endpoints:**
+- Extends `Controller`.
+- **Functions:**
 
-  * `GET /api/v1/articles` → `index(Request, AnyArticleService)` - paginated list of published articles with filters: `page`, `per_page`, `search`, `keyword`, `author_id`, `sort`. Returns paginator-shaped array (`current_page`, `per_page`, `total`, `last_page`, `data`).
-  * `GET /api/v1/articles/{id}` → `show(Request, $id, AnyArticleService)` - detailed public view of a single article. Returns 404 when not found.
-  * `GET /api/v1/articles/help` → `help(ApiDocsService)` - documents response shape and query params.
-* **Behavioral notes:**
+  ##### `index(Request $request, AnyArticleService $service) : JsonResponse`
+  - Accepts optional filters via query: `page`, `per_page`, `search`, `keyword`, `author_id`, `sort`.
+  - Automatically filters articles to `status_id = PUBLISHED`.
+  - Calls `AnyArticleService::listArticles($filters)` to fetch paginated articles.
+  - Returns JSON with paginated results including article metadata, authors, and citation counts.
+  - **Purpose:** Provides a paginated list of all published articles with optional search and filtering.
 
-  * Uses `AnyArticleService` for business logic and mapping (`mapListItem`, `mapDetail`).
-  * Only published articles are returned (`ArticleStatus::PUBLISHED`).
-  * Responses follow `status`/`data` convention for single-item responses and raw paginator for list responses.
+  ##### `show(Request $request, int $id, AnyArticleService $service) : JsonResponse`
+  - Retrieves a single article by its ID via `AnyArticleService::getArticle($id)`.
+  - Returns JSON with full article details: title, abstract, DOI, keywords, file info, authors, reviewers, citations, and timestamps.
+  - Returns 404 if the article does not exist.
+  - **Purpose:** Provides detailed information for a single published article.
 
 #### 10. `v1AuthorArticleController`
 
 * Extends `v1Controller`.
-* **Purpose:** Author-facing endpoints for submitting, viewing and revising owned articles and managing discussion.
-* **Endpoints:**
+* **Functions:**
 
-  * `POST /api/v1/articles/submit` → `store(Request, AuthorArticleService)` - submit new article (file upload required). Returns 201 with created `Article`.
-  * `GET /api/v1/articles/my` → `myArticles(Request, AuthorArticleService)` - paginated list of author's articles. Uses service `listMyArticles()` which currently returns transformed arrays; controller maps collection accordingly.
-  * `GET /api/v1/articles/my/{id}` → `myArticle(Request, $id, AuthorArticleService)` - detailed view for an authored article; includes `files`, `authors`, `citations`. Returns 404 if unauthorized/not found.
-  * `GET /api/v1/articles/my/{id}/comments` → `listComments(Request, $id, AuthorArticleService)` - returns comments thread for the article (author + reviewers).
-  * `POST /api/v1/articles/my/{id}/comments` → `addComment(Request, $id, AuthorArticleService)` - add a comment as the author; validates input and returns created comment.
-  * `POST /api/v1/articles/my/{id}/revision` → `submitRevision(Request, $id, AuthorArticleService)` - upload a new file revision; prevents revisions on finalized articles.
-  * `GET /api/v1/articles/my/help` → `help(ApiDocsService)` - documents request/response shapes and required roles.
-* **Behavioral notes:**
+  ##### `store(Request $request, AuthorArticleService $service) : JsonResponse`
 
-  * All routes are protected by `auth:sanctum` and `roles:AUTHOR` middleware.
-  * File uploads are persisted to storage and recorded in `article_files`; legacy `filename` / `file_type` fields are updated for convenience.
-  * Service returns arrays for list/detail; controller normalizes latest-file fields before returning JSON.
+  * Validates `title`, `abstract`, `file` (PDF/TeX), and optional `keywords`.
+  * Calls `AuthorArticleService::submitArticle()` with current user ID and request data.
+  * Returns JSON with the newly created article.
+  * **Purpose:** Submits a new article as an author.
+
+  ##### `myArticles(Request $request, AuthorArticleService $service) : JsonResponse`
+
+  * Fetches paginated list of articles authored by the current user.
+  * Maps results to `id`, `title`, `abstract`, `doi`, and `status`.
+  * Returns JSON with article list and pagination info.
+  * **Purpose:** Lists all authored articles with status and metadata.
+
+  ##### `myArticle(Request $request, int $id, AuthorArticleService $service) : JsonResponse`
+
+  * Fetches a single authored article by ID.
+  * Includes latest file info (`filename`, `file_type`, `version_number`) if present.
+  * Returns 404 if article not found or not owned by user.
+  * **Purpose:** Shows detailed information for one authored article.
+
+  ##### `listComments(Request $request, int $id, AuthorArticleService $commentsService) : JsonResponse`
+
+  * Retrieves comments for a specific article that the author owns.
+  * Maps each comment to `id`, `user`, `comment`, `created_at`.
+  * **Purpose:** Shows discussion between authors and reviewers.
+
+  ##### `addComment(Request $request, int $id, AuthorArticleService $commentsService) : JsonResponse`
+
+  * Validates `comment` field.
+  * Adds a new comment to the article discussion via `AuthorArticleService`.
+  * Returns JSON with `id`, `user`, `comment`, `created_at`.
+  * **Purpose:** Allows author to post a comment on their article discussion thread.
+
+  ##### `submitRevision(Request $request, int $id, AuthorArticleService $service) : JsonResponse`
+
+  * Validates `file` (PDF/TeX) and optional `notes`.
+  * Submits a revision for an existing article via `AuthorArticleService`.
+  * Returns JSON with the updated article/revision info.
+  * **Purpose:** Handles revision uploads after reviewer feedback.
 
 #### 11. `v1AdminArticleController`
 
 * Extends `v1Controller`.
-* **Purpose:** Administrative article management - listing, assigning reviewers, and final decisions.
-* **Endpoints:**
+* **Functions:**
 
-  * `GET /api/v1/articles/admin` → `AdminlistAllArticles(Request, AdminArticleService)` - paginated admin view (full details). Accepts `status` and `search` filters.
-  * `GET /api/v1/articles/admin/reviewers` → `listReviewers(Request, AdminArticleService)` - paginated list of users with reviewer role; supports search.
-  * `PATCH /api/v1/articles/admin/reviewers/{id}` → `AdminAssignReviewers(Request, $id, AdminArticleService)` - syncs reviewers for an article, sets status to `UNDER_REVIEW`, fires `ReviewersAssigned` event. Validates reviewer role.
-  * `PATCH /api/v1/articles/admin/decide/{id}` → `makeDecision(Request, $id, AdminArticleService)` - admin publishes or rejects by calling service `makeDecision()`. Returns status with appropriate HTTP code (200 for success, 403 for invalid transitions).
-  * `GET /api/v1/articles/admin/help` → `help(ApiDocsService)` - documents admin endpoints and payloads.
-* **Behavioral notes:**
+  ##### `listReviewers(Request $request, AdminArticleService $service) : JsonResponse`
 
-  * All endpoints are protected by `auth:sanctum` + `roles:ADMINISTRATOR`.
-  * Controller logs key actions and errors; wraps service calls in try/catch to return 500 on unexpected failures.
-  * After assigning reviewers, controller updates convenience fields (`filename`, `file_type`, `version_number`) from the latest file.
+  * Retrieves a paginated list of reviewers with optional search.
+  * Returns JSON with reviewer details.
+  * **Purpose:** Allows admin to browse all reviewers.
+
+  ##### `AdminlistAllArticles(Request $request, AdminArticleService $service) : JsonResponse`
+
+  * Retrieves all articles with optional status and search filters, paginated (default 5 per page).
+  * Logs incoming filters and paginated results.
+  * Returns JSON with full article data including authors and citations.
+  * **Purpose:** Allows admin to view all articles with full metadata.
+
+  ##### `AdminAssignReviewers(Request $request, int $id, AdminArticleService $service) : JsonResponse`
+
+  * Validates an array of reviewer IDs.
+  * Calls `AdminArticleService::assignReviewers()` to assign reviewers to an article.
+  * Updates article status to `UNDER_REVIEW` and fires `ReviewersAssigned` event.
+  * Attaches latest file info (`filename`, `file_type`, `version_number`) if present.
+  * Returns JSON with updated article object.
+  * **Purpose:** Assigns reviewers to an article and updates its review status.
+
+  ##### `makeDecision(Request $request, int $id, AdminArticleService $service) : JsonResponse`
+
+  * Validates `status` field to be either `published` or `rejected_by_admin`.
+  * Calls `AdminArticleService::makeDecision()` to finalize article decision.
+  * Returns JSON with success or error message and appropriate HTTP status code.
+  * **Purpose:** Allows admin to publish or reject an article.
 
 #### 12. `v1ReviewerArticleController`
 
 * Extends `v1Controller`.
-* **Purpose:** Reviewer-facing endpoints to view assigned articles, comment, submit reviews and make review-level decisions.
-* **Endpoints:**
-  * `GET /api/v1/articles/assigned` → `assignedArticles(Request, ReviewerArticleService)` - paginated list of articles assigned to the reviewer.
-  * `GET /api/v1/articles/assigned/{id}` → `assignedArticle(Request, $id, ReviewerArticleService)` - detailed assigned article view including comments; returns 404 when not assigned.
-  * `POST /api/v1/articles/assigned/comment/{id}` → `leaveComment(Request, $id, ReviewerArticleService)` - add a comment as reviewer to an assigned article. Validates assignment and payload.
-  * `POST /api/v1/articles/assigned/{id}/review` → `submitAssignedReview(Request, $id, ReviewerArticleService)` - creates or updates a `Review` for the reviewer; validates `recommendation` and `comments`.
-  * `POST /api/v1/articles/assigned/decide/{id}` → `makeDecision(Request, $id)` - reviewer-level accept/reject decision that updates article status with transition guards (prevents invalid transitions).
-  * `GET /api/v1/articles/assigned/help` → `help(ApiDocsService)` - documents reviewer flows and API shapes.
-* **Behavioral notes:**
-  * Protected by `auth:sanctum` + `roles:REVIEWER`.
-  * Controller and service both check reviewer assignment before allowing actions.
-  * Reviewer decisions set article status to `ACCEPTED` or `REJECTED` (admin can later override to `rejected_by_admin` or `published`).
+* **Functions:**
+
+  ##### `assignedArticles(Request $request, ReviewerArticleService $service) : JsonResponse`
+
+  * Retrieves paginated list of articles assigned to the current reviewer (default 10 per page).
+  * Returns JSON with article data.
+  * **Purpose:** Allows a reviewer to see all articles they are assigned to.
+
+  ##### `assignedArticle(Request $request, int $id, ReviewerArticleService $service) : JsonResponse`
+
+  * Fetches a single assigned article by ID for the current reviewer.
+  * Includes latest file info (`filename`, `file_type`, `version_number`) if available.
+  * Returns 404 if article not assigned to the reviewer.
+  * **Purpose:** Provides detailed view of an assigned article for review.
+
+  ##### `leaveComment(Request $request, int $id, ReviewerArticleService $service) : JsonResponse`
+
+  * Validates `comment` field (required, max 5000 characters).
+  * Creates a new `ArticleComment` for the assigned article.
+  * Returns JSON with comment details.
+  * **Purpose:** Allows reviewer to post a comment on an assigned article.
+
+  ##### `submitAssignedReview(Request $request, int $id, ReviewerArticleService $service) : JsonResponse`
+
+  * Submits a full review for an assigned article via `ReviewerArticleService`.
+  * Returns JSON with review result or metadata.
+  * **Purpose:** Allows reviewer to submit evaluation/review of their assigned article.
+
+  ##### `makeDecision(Request $request, int $id) : JsonResponse`
+
+  * Validates `decision` field (`accepted` or `rejected`).
+  * Checks if the reviewer is assigned to the article.
+  * Prevents invalid status changes (e.g., rejecting already accepted articles).
+  * Updates `status_id` on the `Article` model accordingly.
+  * Returns JSON with `status`, `article_id`, and `new_status`.
+  * **Purpose:** Lets reviewers record their acceptance or rejection decision on assigned articles.
+
+  ##### `help(ApiDocsService $apiDocs) : JsonResponse`
+
+  * Registers API documentation endpoints relevant for reviewer usage.
+  * Returns JSON with structured endpoint definitions.
+  * **Purpose:** Provides programmatic help/documentation for reviewer article endpoints.
+
 #### Conclusion
 The v1 controller architecture establishes a clear separation of responsibilities across public, author, reviewer, and administrator workflows. Controllers remain thin, delegating business logic such as article state transitions, reviewer assignments, and file handling to dedicated service classes. Role based middleware and ownership checks enforce security consistently, while standardized response formats ensure predictable API behavior for clients. By combining validation, authorization, structured error handling, and event driven notifications, this design achieves maintainability, testability, and scalability, providing a robust foundation for a scientific article publishing system.
 
