@@ -29,7 +29,12 @@ Registarion Page:
 Update Profile Page:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8a2da307-c6ee-464e-87cc-2995101cbfb5" />
 Change Password Page:
-
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/66582348-6fab-4843-bbcd-d715ddd5fdf2" />
+Deactivate Account Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/04a25ba0-fe91-4eba-8c76-62addd0ef094" />
+All Users Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7356cc4c-a855-4120-97a7-d7d2ad6a5bfe" />
+User Search Page:
 
 #### Article
 ### Router
