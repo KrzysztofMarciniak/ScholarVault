@@ -57,6 +57,14 @@ After revision:
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c1cf28b4-e24f-4774-a749-4e155fae3f9d" />
 ### Admin
 All Articles Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/13f75f0a-de41-417d-87d7-d03b47c06afe" />
+Assign Reviewer Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8574c785-4def-4cde-a3f1-9f36f9acc54e" />
+### Reviewer
+All Assigned Articles Page:
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7d542aca-8b49-4b84-af46-0ceaec64a02e" />
+Assigned Article Details:
+![Uploading image.png…]()
 
 
 
