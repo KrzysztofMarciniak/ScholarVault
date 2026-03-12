@@ -331,9 +331,9 @@ Assigned Article Details:
 * **Purpose:** Public read-only endpoints for published articles.
 * **Endpoints:**
 
-  * `GET /api/v1/articles` → `index(Request, AnyArticleService)` — paginated list of published articles with filters: `page`, `per_page`, `search`, `keyword`, `author_id`, `sort`. Returns paginator-shaped array (`current_page`, `per_page`, `total`, `last_page`, `data`).
-  * `GET /api/v1/articles/{id}` → `show(Request, $id, AnyArticleService)` — detailed public view of a single article. Returns 404 when not found.
-  * `GET /api/v1/articles/help` → `help(ApiDocsService)` — documents response shape and query params.
+  * `GET /api/v1/articles` → `index(Request, AnyArticleService)` - paginated list of published articles with filters: `page`, `per_page`, `search`, `keyword`, `author_id`, `sort`. Returns paginator-shaped array (`current_page`, `per_page`, `total`, `last_page`, `data`).
+  * `GET /api/v1/articles/{id}` → `show(Request, $id, AnyArticleService)` - detailed public view of a single article. Returns 404 when not found.
+  * `GET /api/v1/articles/help` → `help(ApiDocsService)` - documents response shape and query params.
 * **Behavioral notes:**
 
   * Uses `AnyArticleService` for business logic and mapping (`mapListItem`, `mapDetail`).
@@ -346,13 +346,13 @@ Assigned Article Details:
 * **Purpose:** Author-facing endpoints for submitting, viewing and revising owned articles and managing discussion.
 * **Endpoints:**
 
-  * `POST /api/v1/articles/submit` → `store(Request, AuthorArticleService)` — submit new article (file upload required). Returns 201 with created `Article`.
-  * `GET /api/v1/articles/my` → `myArticles(Request, AuthorArticleService)` — paginated list of author's articles. Uses service `listMyArticles()` which currently returns transformed arrays; controller maps collection accordingly.
-  * `GET /api/v1/articles/my/{id}` → `myArticle(Request, $id, AuthorArticleService)` — detailed view for an authored article; includes `files`, `authors`, `citations`. Returns 404 if unauthorized/not found.
-  * `GET /api/v1/articles/my/{id}/comments` → `listComments(Request, $id, AuthorArticleService)` — returns comments thread for the article (author + reviewers).
-  * `POST /api/v1/articles/my/{id}/comments` → `addComment(Request, $id, AuthorArticleService)` — add a comment as the author; validates input and returns created comment.
-  * `POST /api/v1/articles/my/{id}/revision` → `submitRevision(Request, $id, AuthorArticleService)` — upload a new file revision; prevents revisions on finalized articles.
-  * `GET /api/v1/articles/my/help` → `help(ApiDocsService)` — documents request/response shapes and required roles.
+  * `POST /api/v1/articles/submit` → `store(Request, AuthorArticleService)` - submit new article (file upload required). Returns 201 with created `Article`.
+  * `GET /api/v1/articles/my` → `myArticles(Request, AuthorArticleService)` - paginated list of author's articles. Uses service `listMyArticles()` which currently returns transformed arrays; controller maps collection accordingly.
+  * `GET /api/v1/articles/my/{id}` → `myArticle(Request, $id, AuthorArticleService)` - detailed view for an authored article; includes `files`, `authors`, `citations`. Returns 404 if unauthorized/not found.
+  * `GET /api/v1/articles/my/{id}/comments` → `listComments(Request, $id, AuthorArticleService)` - returns comments thread for the article (author + reviewers).
+  * `POST /api/v1/articles/my/{id}/comments` → `addComment(Request, $id, AuthorArticleService)` - add a comment as the author; validates input and returns created comment.
+  * `POST /api/v1/articles/my/{id}/revision` → `submitRevision(Request, $id, AuthorArticleService)` - upload a new file revision; prevents revisions on finalized articles.
+  * `GET /api/v1/articles/my/help` → `help(ApiDocsService)` - documents request/response shapes and required roles.
 * **Behavioral notes:**
 
   * All routes are protected by `auth:sanctum` and `roles:AUTHOR` middleware.
@@ -362,14 +362,14 @@ Assigned Article Details:
 #### 11. `v1AdminArticleController`
 
 * Extends `v1Controller`.
-* **Purpose:** Administrative article management — listing, assigning reviewers, and final decisions.
+* **Purpose:** Administrative article management - listing, assigning reviewers, and final decisions.
 * **Endpoints:**
 
-  * `GET /api/v1/articles/admin` → `AdminlistAllArticles(Request, AdminArticleService)` — paginated admin view (full details). Accepts `status` and `search` filters.
-  * `GET /api/v1/articles/admin/reviewers` → `listReviewers(Request, AdminArticleService)` — paginated list of users with reviewer role; supports search.
-  * `PATCH /api/v1/articles/admin/reviewers/{id}` → `AdminAssignReviewers(Request, $id, AdminArticleService)` — syncs reviewers for an article, sets status to `UNDER_REVIEW`, fires `ReviewersAssigned` event. Validates reviewer role.
-  * `PATCH /api/v1/articles/admin/decide/{id}` → `makeDecision(Request, $id, AdminArticleService)` — admin publishes or rejects by calling service `makeDecision()`. Returns status with appropriate HTTP code (200 for success, 403 for invalid transitions).
-  * `GET /api/v1/articles/admin/help` → `help(ApiDocsService)` — documents admin endpoints and payloads.
+  * `GET /api/v1/articles/admin` → `AdminlistAllArticles(Request, AdminArticleService)` - paginated admin view (full details). Accepts `status` and `search` filters.
+  * `GET /api/v1/articles/admin/reviewers` → `listReviewers(Request, AdminArticleService)` - paginated list of users with reviewer role; supports search.
+  * `PATCH /api/v1/articles/admin/reviewers/{id}` → `AdminAssignReviewers(Request, $id, AdminArticleService)` - syncs reviewers for an article, sets status to `UNDER_REVIEW`, fires `ReviewersAssigned` event. Validates reviewer role.
+  * `PATCH /api/v1/articles/admin/decide/{id}` → `makeDecision(Request, $id, AdminArticleService)` - admin publishes or rejects by calling service `makeDecision()`. Returns status with appropriate HTTP code (200 for success, 403 for invalid transitions).
+  * `GET /api/v1/articles/admin/help` → `help(ApiDocsService)` - documents admin endpoints and payloads.
 * **Behavioral notes:**
 
   * All endpoints are protected by `auth:sanctum` + `roles:ADMINISTRATOR`.
@@ -381,12 +381,12 @@ Assigned Article Details:
 * Extends `v1Controller`.
 * **Purpose:** Reviewer-facing endpoints to view assigned articles, comment, submit reviews and make review-level decisions.
 * **Endpoints:**
-  * `GET /api/v1/articles/assigned` → `assignedArticles(Request, ReviewerArticleService)` — paginated list of articles assigned to the reviewer.
-  * `GET /api/v1/articles/assigned/{id}` → `assignedArticle(Request, $id, ReviewerArticleService)` — detailed assigned article view including comments; returns 404 when not assigned.
-  * `POST /api/v1/articles/assigned/comment/{id}` → `leaveComment(Request, $id, ReviewerArticleService)` — add a comment as reviewer to an assigned article. Validates assignment and payload.
-  * `POST /api/v1/articles/assigned/{id}/review` → `submitAssignedReview(Request, $id, ReviewerArticleService)` — creates or updates a `Review` for the reviewer; validates `recommendation` and `comments`.
-  * `POST /api/v1/articles/assigned/decide/{id}` → `makeDecision(Request, $id)` — reviewer-level accept/reject decision that updates article status with transition guards (prevents invalid transitions).
-  * `GET /api/v1/articles/assigned/help` → `help(ApiDocsService)` — documents reviewer flows and API shapes.
+  * `GET /api/v1/articles/assigned` → `assignedArticles(Request, ReviewerArticleService)` - paginated list of articles assigned to the reviewer.
+  * `GET /api/v1/articles/assigned/{id}` → `assignedArticle(Request, $id, ReviewerArticleService)` - detailed assigned article view including comments; returns 404 when not assigned.
+  * `POST /api/v1/articles/assigned/comment/{id}` → `leaveComment(Request, $id, ReviewerArticleService)` - add a comment as reviewer to an assigned article. Validates assignment and payload.
+  * `POST /api/v1/articles/assigned/{id}/review` → `submitAssignedReview(Request, $id, ReviewerArticleService)` - creates or updates a `Review` for the reviewer; validates `recommendation` and `comments`.
+  * `POST /api/v1/articles/assigned/decide/{id}` → `makeDecision(Request, $id)` - reviewer-level accept/reject decision that updates article status with transition guards (prevents invalid transitions).
+  * `GET /api/v1/articles/assigned/help` → `help(ApiDocsService)` - documents reviewer flows and API shapes.
 * **Behavioral notes:**
   * Protected by `auth:sanctum` + `roles:REVIEWER`.
   * Controller and service both check reviewer assignment before allowing actions.
@@ -459,6 +459,61 @@ The authentication and registration services handle user login, logout, and new 
 * **Transactional safety:** User creation is wrapped in a DB transaction to prevent partial writes.
 * **Consistency:** Responses follow the `{ token, user }` shape for API clients.
 
+#### Article Management
+
+The article services encapsulate all business logic for handling articles in different roles: authors, reviewers, administrators, and public users. They centralize file handling, status transitions, commenting, and filtering to maintain consistency across controllers.
+
+**Components:**
+
+1. **BaseArticleService** - Abstract base providing shared traits:
+
+   * **ArticleTransformTrait** - Maps articles to standardized list/detail arrays including authors, files, citations, and reviewer info.
+   * **ArticleQueryTrait** - Handles filtering (`author_id`, `keyword`, `search`) and sorting (`oldest`, newest first).
+   * Provides `paginateQuery` for consistent pagination.
+
+2. **AnyArticleService** - Public-facing read-only operations:
+
+   * `listArticles(array $filters)` - Returns paginated published articles with optional search, keyword, author filters.
+   * `getArticle(int $id)` - Returns a single article detail or null if not found.
+   * Only includes articles with `ArticleStatus::PUBLISHED`.
+
+3. **AuthorArticleService** - Author-facing operations:
+
+   * `submitArticle(...)` - Handles new article submissions with file storage, primary author assignment, versioning, and triggers `ArticleSubmitted` event.
+   * `listMyArticles(int $authorId)` - Returns paginated authored articles.
+   * `viewMyArticle(int $authorId, int $articleId)` - Returns detailed article with files, citations, and authors.
+   * `listComments` / `addComment` - Manage author-visible comments.
+   * `submitRevision` - Handles file revisions while preventing edits to finalized articles (`ACCEPTED` or `PUBLISHED`).
+
+4. **ReviewerArticleService** - Reviewer-facing operations:
+ 
+   * `assignedArticles(User $user)` - Paginated list of articles assigned to the reviewer.
+   * `assignedArticle(User $user, int $id)` - Detailed view including comments.
+   * `submitReview` - Create/update a `Review` with validation.
+   * `submitReviewDecision` - Reviewer can mark article `ACCEPTED` or `REJECTED`.
+   * Maps articles differently for list vs. detail view, normalizing latest file data, comments, and associated authors.
+
+5. **AdminArticleService** - Administrator operations:
+
+   * `listArticles(int $perPage, array $filters)` - Full paginated article view with filters (`status`, `search`).
+   * `listReviewers(int $perPage, ?string $search)` - Lists reviewers with optional search.
+   * `assignReviewers(int $articleId, array $reviewerIds)` - Assigns reviewers, validating roles.
+   * `makeDecision(int $articleId, string $status)` - Admin-level decision to `publish` or `reject_by_admin`.
+   * Provides transformations for detailed admin views including authors, citations, and reviewers.
+
+6. **ArticleCommentService** - Centralized comment logic (for both authors and reviewers):
+
+   * `addComment` / `listComments` - Adds or retrieves comments only if user is author or assigned reviewer.
+   * `deleteComment` - Reviewer-only deletion.
+   * Internal checks enforce role-based access to comments.
+
+**Design Highlights:**
+
+* **Role-based encapsulation:** Services isolate logic per role (author, reviewer, admin, public).
+* **File versioning:** Author submissions and revisions store versioned files.
+* **Event-driven:** Actions like `ArticleSubmitted` and `ReviewSubmitted` trigger events for downstream processing.
+* **Filtering & pagination:** Uniform query filters and pagination via traits ensure consistent results across endpoints.
+* **Validation & access control:** All operations validate user permissions before mutating data.
 
 ---
 ### Stack
