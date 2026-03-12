@@ -142,9 +142,7 @@ Assigned Article Details:
 2. **SPA serving:** Single route for front-end with client-side routing.
 3. **Scalability:** Role-specific middleware isolates permissions cleanly.
 4. **Maintainability:** Clear endpoint grouping (`author`, `reviewer`, `admin`).
-Here’s a concise structured summary of your models and their relationships based on the code you provided:
 
----
 
 ### **Models Overview**
 
@@ -242,10 +240,6 @@ Here’s a concise structured summary of your models and their relationships bas
 3. **Notifications** are scoped to users and track read/unread.
 4. **User deactivation logic** is robust: admins cannot deactivate the last active admin.
 5. **Self-contained helpers** allow conversion to array representations suitable for API responses.
-
-Here’s a structured summary of your controllers and their responsibilities based on the code you provided:
-
----
 
 ### Controllers Overview
 
@@ -395,14 +389,13 @@ Here’s a structured summary of your controllers and their responsibilities bas
   * `POST /api/v1/articles/assigned/decide/{id}` → `makeDecision(Request, $id)` — reviewer-level accept/reject decision that updates article status with transition guards (prevents invalid transitions).
   * `GET /api/v1/articles/assigned/help` → `help(ApiDocsService)` — documents reviewer flows and API shapes.
 * **Behavioral notes:**
-
   * Protected by `auth:sanctum` + `roles:REVIEWER`.
   * Controller and service both check reviewer assignment before allowing actions.
   * Reviewer decisions set article status to `ACCEPTED` or `REJECTED` (admin can later override to `rejected_by_admin` or `published`).
-
+#### Conclusion
+The v1 controller architecture establishes a clear separation of responsibilities across public, author, reviewer, and administrator workflows. Controllers remain thin, delegating business logic such as article state transitions, reviewer assignments, and file handling to dedicated service classes. Role based middleware and ownership checks enforce security consistently, while standardized response formats ensure predictable API behavior for clients. By combining validation, authorization, structured error handling, and event driven notifications, this design achieves maintainability, testability, and scalability, providing a robust foundation for a scientific article publishing system.
 
 ### Services
-
 
 
 ---
