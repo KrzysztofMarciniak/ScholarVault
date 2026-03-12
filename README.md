@@ -381,7 +381,6 @@ Assigned Article Details:
 * Extends `v1Controller`.
 * **Purpose:** Reviewer-facing endpoints to view assigned articles, comment, submit reviews and make review-level decisions.
 * **Endpoints:**
-
   * `GET /api/v1/articles/assigned` → `assignedArticles(Request, ReviewerArticleService)` — paginated list of articles assigned to the reviewer.
   * `GET /api/v1/articles/assigned/{id}` → `assignedArticle(Request, $id, ReviewerArticleService)` — detailed assigned article view including comments; returns 404 when not assigned.
   * `POST /api/v1/articles/assigned/comment/{id}` → `leaveComment(Request, $id, ReviewerArticleService)` — add a comment as reviewer to an assigned article. Validates assignment and payload.
@@ -396,6 +395,69 @@ Assigned Article Details:
 The v1 controller architecture establishes a clear separation of responsibilities across public, author, reviewer, and administrator workflows. Controllers remain thin, delegating business logic such as article state transitions, reviewer assignments, and file handling to dedicated service classes. Role based middleware and ownership checks enforce security consistently, while standardized response formats ensure predictable API behavior for clients. By combining validation, authorization, structured error handling, and event driven notifications, this design achieves maintainability, testability, and scalability, providing a robust foundation for a scientific article publishing system.
 
 ### Services
+#### User
+The user service layer provides role-aware, centralized business logic for all user-related operations, separating administrative actions from regular self-service workflows.
+
+**Components:**
+
+1. **BaseUserService** - Abstract class defining the uniform interface:
+
+   * `create(array $data): User`
+   * `update(User $user, array $data): User`
+
+2. **AdminUserService** - For administrator actors:
+
+   * Can create users (`createFromAdmin`) and update any user (`updateFromAdmin`).
+   * Tracks modified fields via `getDirtyKeys()` and fires `UserModifiedByAdmin` events for audit purposes.
+
+3. **AnyUserService** - For non-administrators:
+
+   * Prevents creation of users (throws exception).
+   * Allows updating own profile, changing password (`changePassword`), and self-deactivation (`deactivate`).
+   * Fires `UserUpdatedSelf` and `UserChangedPassword` events for tracking.
+   * Ensures deactivation is idempotent and revokes all API tokens.
+
+4. **UserServiceFactory** - Returns the correct service instance based on actor role:
+
+   * Administrator → `AdminUserService`
+   * Regular user → `AnyUserService`
+
+**Design Highlights:**
+
+* **Role separation:** Admins have full user management capabilities, where regular users are limited to self-service.
+* **Controller simplification:** Controllers delegate business rules to services, remaining thin.
+* **Auditability & security:** Dirty-field tracking and role enforcement prevent unauthorized modifications.
+
+#### Authentication & Registration
+
+The authentication and registration services handle user login, logout, and new account creation, centralizing security and session management logic.
+
+**Components:**
+
+1. **AuthService** - Manages login and logout for existing users:
+
+   * **Login (`login(array $credentials): array`)**
+
+     * Verifies credentials via `Auth::attempt`.
+     * Rejects login if the account is deactivated (throws 403).
+     * Returns a fresh API token and normalized user profile (`toProfileArray`).
+   * **Logout (`logout(User $user): void`)**
+
+     * Deletes the current API token for the authenticated user.
+
+2. **RegistrationService** - Handles new user registration:
+
+   * Registers new users with a default `AUTHOR` role.
+   * Uses database transactions to ensure atomic creation.
+   * Generates a new API token upon registration.
+   * Returns normalized user profile and token for immediate use.
+
+**Design Highlights:**
+
+* **Security:** Centralized credential verification and token management.
+* **Role assignment:** New users are automatically assigned the `AUTHOR` role, ensuring predictable privileges.
+* **Transactional safety:** User creation is wrapped in a DB transaction to prevent partial writes.
+* **Consistency:** Responses follow the `{ token, user }` shape for API clients.
 
 
 ---
