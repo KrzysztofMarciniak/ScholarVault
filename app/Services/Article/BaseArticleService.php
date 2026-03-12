@@ -1,13 +1,17 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Services\Article;
+
+use App\Models\Article;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 abstract class BaseArticleService
 {
-    public function formatArticle(array $article): array
+    use ArticleTransformTrait;
+    use ArticleQueryTrait;
+
+    protected function paginateQuery($query, int $perPage = 10, int $page = 1): LengthAwarePaginator
     {
-        return $article;
+        return $query->paginate($perPage, ["*"], "page", $page);
     }
 }
