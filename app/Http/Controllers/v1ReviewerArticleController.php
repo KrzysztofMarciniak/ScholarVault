@@ -14,18 +14,16 @@ use Illuminate\Http\Request;
 
 class v1ReviewerArticleController extends v1Controller
 {
-    public function assignedArticles(Request $request, ReviewerArticleService $service)
-    {
-        $user = $request->user();
-        $articles = $service->assignedArticles($user, 10);
+public function assignedArticles(Request $request, ReviewerArticleService $service): JsonResponse
+{
+    $user = $request->user();
+    $articles = $service->assignedArticles($user, 10);
 
-        return response()->json($articles, 200);
-    }
-
+    return response()->json($articles, 200);
+}
     public function leaveComment(Request $request, int $id, ReviewerArticleService $service): JsonResponse
     {
         $user = $request->user();
-
         $article = $service->assignedArticle($user, $id);
 
         if (!$article) {
@@ -38,9 +36,7 @@ class v1ReviewerArticleController extends v1Controller
             "comment" => ["required", "string", "max:5000"],
         ]);
 
-        // Determine article ID safely
-        $articleId = is_array($article) ? ($article["id"] ?? null) : $article->id;
-
+        $articleId = $article["id"] ?? null;
         if (!$articleId) {
             return response()->json([
                 "message" => "Invalid article data.",
@@ -67,6 +63,14 @@ class v1ReviewerArticleController extends v1Controller
             ], 404);
         }
 
+        // Override top-level filename/file_type with latest file
+        $latestFile = $article['files'][0] ?? null;
+        if ($latestFile) {
+            $article['filename'] = $latestFile['filename'];
+            $article['file_type'] = $latestFile['file_type'];
+            $article['version_number'] = $latestFile['version_number'];
+        }
+
         return response()->json($article, 200);
     }
 
@@ -77,6 +81,56 @@ class v1ReviewerArticleController extends v1Controller
 
         return response()->json($review, 200);
     }
+
+    public function makeDecision(Request $request, int $id): JsonResponse
+    {
+        $data = $request->validate([
+            "decision" => "required|string|in:accepted,rejected",
+        ]);
+
+        $userId = $request->user()->id;
+        $decision = $data["decision"];
+
+        $article = Article::with("reviewers")->findOrFail($id);
+
+        if (!$article->reviewers->contains($userId)) {
+            return response()->json([
+                "message" => "You are not assigned to review this article.",
+            ], 403);
+        }
+
+        $currentStatus = $article->status_id;
+
+        if ($currentStatus === ArticleStatus::ACCEPTED->value && $decision === "rejected") {
+            return response()->json([
+                "message" => "Cannot reject an already accepted article.",
+            ], 403);
+        }
+
+        if (
+            in_array($currentStatus, [
+                ArticleStatus::REJECTED->value,
+                ArticleStatus::REJECTED_BY_ADMIN->value,
+            ], true) && $decision === "accepted"
+        ) {
+            return response()->json([
+                "message" => "Cannot accept an already rejected article.",
+            ], 403);
+        }
+
+        $article->status_id = $decision === "accepted"
+            ? ArticleStatus::ACCEPTED->value
+            : ArticleStatus::REJECTED->value;
+
+        $article->save();
+
+        return response()->json([
+            "status" => "success",
+            "article_id" => $article->id,
+            "new_status" => $article->status_id,
+        ]);
+    }
+
 
     public function help(ApiDocsService $apiDocs): JsonResponse
     {
@@ -222,58 +276,4 @@ class v1ReviewerArticleController extends v1Controller
         return response()->json($apiDocs->getDocs());
     }
 
-    public function makeDecision(Request $request, int $id): JsonResponse
-    {
-        $data = $request->validate([
-            "decision" => "required|string|in:accepted,rejected",
-        ]);
-
-        $userId = $request->user()->id;
-        $decision = $data["decision"];
-
-        // Fetch article by ID from URL
-        $article = Article::with("reviewers")->findOrFail($id);
-
-        // Verify reviewer assignment via article_reviewer pivot
-        $assigned = $article->reviewers->contains($userId);
-
-        if (!$assigned) {
-            return response()->json([
-                "message" => "You are not assigned to review this article.",
-            ], 403);
-        }
-
-        $currentStatus = $article->status_id;
-
-        // Prevent illegal status transitions
-        if ($currentStatus === ArticleStatus::ACCEPTED->value && $decision === "rejected") {
-            return response()->json([
-                "message" => "Cannot reject an already accepted article.",
-            ], 403);
-        }
-
-        if (
-            in_array($currentStatus, [
-                ArticleStatus::REJECTED->value,
-                ArticleStatus::REJECTED_BY_ADMIN->value,
-            ], true) && $decision === "accepted"
-        ) {
-            return response()->json([
-                "message" => "Cannot accept an already rejected article.",
-            ], 403);
-        }
-
-        // Apply new status
-        $article->status_id = $decision === "accepted"
-            ? ArticleStatus::ACCEPTED->value
-            : ArticleStatus::REJECTED->value;
-
-        $article->save();
-
-        return response()->json([
-            "status" => "success",
-            "article_id" => $article->id,
-            "new_status" => $article->status_id,
-        ]);
-    }
 }

@@ -24,17 +24,26 @@ class AuthorArticleService extends BaseArticleService
     ): Article {
         $filename = $file->store("articles", "public");
 
+        // create article
         $article = Article::create([
             "title" => $title,
             "abstract" => $abstract,
-            "filename" => $filename,
-            "file_type" => $file->getClientOriginalExtension(),
+            "filename" => $filename, // legacy, optional
+            "file_type" => $file->getClientOriginalExtension(), // legacy, optional
             "keywords" => $keywords ?? [],
             "status_id" => ArticleStatus::SUBMITTED->value,
         ]);
 
-        $article->authors()->attach($authorId, [
-            "is_primary" => true,
+        // attach author
+        $article->authors()->attach($authorId, ["is_primary" => true]);
+
+        // create first file (version 1)
+        $article->files()->create([
+            "filename" => $filename,
+            "file_type" => $file->getClientOriginalExtension(),
+            "uploaded_by" => $authorId,
+            "notes" => null,
+            "version_number" => 1,
         ]);
 
         event(new ArticleSubmitted($article));
@@ -44,9 +53,7 @@ class AuthorArticleService extends BaseArticleService
 
     public function listMyArticles(int $authorId, int $perPage = 10): LengthAwarePaginator
     {
-        return Article::whereHas("authors", function ($query) use ($authorId): void {
-            $query->where("user_id", $authorId);
-        })
+        return Article::whereHas("authors", fn($q) => $q->where("user_id", $authorId))
             ->leftJoin("article_statuses as s", "articles.status_id", "=", "s.id")
             ->select(
                 "articles.id",
@@ -55,47 +62,28 @@ class AuthorArticleService extends BaseArticleService
                 "articles.doi",
                 "s.name as status",
             )
-            ->distinct("articles.id") // ensures duplicates from joins don’t break pagination
+            ->distinct("articles.id")
             ->paginate($perPage);
     }
 
-    /**
-     * Return formatted article array if $authorId is an author of the article,
-     * otherwise null.
-     */
     public function viewMyArticle(int $authorId, int $articleId): ?array
     {
         $article = Article::with([
             "authors:id,name,orcid",
             "citations:id,title,doi",
             "status:id,name",
+            "files.uploader:id,name",
         ])
-            ->authoredBy($authorId)
-            ->find($articleId);
+        ->authoredBy($authorId)
+        ->find($articleId);
 
-        if (!$article) {
-            return null;
-        }
-
-        return $article->toAuthorDetailArray();
+        return $article?->toAuthorDetailArray();
     }
 
-    public function submitRevision(int $authorId, int $articleId, array $data): array
-    {
-        return $data;
-    }
-
-    /**
-     * List comments for an article authored by $authorId.
-     *
-     * @return Collection
-     */
     public function listComments(int $articleId, int $authorId): EloquentCollection
     {
-        $article = $this->viewMyArticle($authorId, $articleId);
-
-        if (!$article) {
-            return collect(); // empty Eloquent collection
+        if (!$this->viewMyArticle($authorId, $articleId)) {
+            return collect();
         }
 
         return ArticleComment::with("user")
@@ -104,15 +92,9 @@ class AuthorArticleService extends BaseArticleService
             ->get();
     }
 
-    /**
-     * Add a comment to an article authored by $authorId.
-     */
     public function addComment(int $articleId, int $authorId, string $comment): ArticleComment
     {
-        // Ensure the user is an author of the article
-        $article = $this->viewMyArticle($authorId, $articleId);
-
-        if (!$article) {
+        if (!$this->viewMyArticle($authorId, $articleId)) {
             throw new Exception("Unauthorized or article not found.");
         }
 
@@ -121,5 +103,58 @@ class AuthorArticleService extends BaseArticleService
             "user_id" => $authorId,
             "comment" => $comment,
         ]);
+    }
+
+    public function submitRevision(int $authorId, int $articleId, array $data): array
+    {
+        $article = Article::authoredBy($authorId)->find($articleId);
+
+        if (!$article) {
+            throw new Exception("Unauthorized or article not found.");
+        }
+
+        // block revisions on finalized articles
+        if (in_array($article->status_id, [
+            ArticleStatus::ACCEPTED->value,
+            ArticleStatus::PUBLISHED->value,
+        ], true)) {
+            throw new Exception("Article is finalized (accepted or published). Revisions are not allowed.");
+        }
+
+        /** @var IlluminateUploadedFile $file */
+        $file = $data["file"] ?? null;
+        $notes = $data["notes"] ?? null;
+
+        if (!$file || !$file->isValid()) {
+            throw new Exception("Invalid file uploaded.");
+        }
+
+        $filename = $file->store("articles", "public");
+
+        $lastFile = $article->latestFile();
+        $nextVersion = $lastFile ? ($lastFile->version_number + 1) : 1;
+
+        $revision = $article->files()->create([
+            "filename" => $filename,
+            "file_type" => $file->getClientOriginalExtension(),
+            "uploaded_by" => $authorId,
+            "notes" => $notes,
+            "version_number" => $nextVersion,
+        ]);
+
+        // optional: update legacy fields
+        $article->filename = $revision->filename;
+        $article->file_type = $revision->file_type;
+        $article->save();
+
+        return [
+            "id" => $revision->id,
+            "article_id" => $article->id,
+            "filename" => $revision->filename,
+            "file_type" => $revision->file_type,
+            "version_number" => $revision->version_number,
+            "notes" => $revision->notes,
+            "uploaded_at" => $revision->created_at,
+        ];
     }
 }

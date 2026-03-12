@@ -185,8 +185,78 @@ export async function renderAuthorArticle(articleId) {
 
     const comments = await fetchComments(articleId);
     renderComments(container, comments ?? [], articleId);
+    renderRevisionSection(container, articleId);
   } catch (err) {
     container.innerHTML = `<div class="py-6 text-red-600 dark:text-red-400 text-center">Failed to load article: ${err.message}</div>`;
     console.error(err);
   }
+}
+async function submitRevision(articleId, fileInput, notesInput) {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const file = fileInput.files[0];
+  if (!file) throw new Error("Please select a file for revision.");
+
+  const formData = new FormData();
+  formData.append("file", file);
+  if (notesInput?.value) formData.append("notes", notesInput.value);
+
+  const res = await fetch(`/api/v1/articles/my/revision/${articleId}`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.message || res.statusText || "Failed to submit revision");
+
+  return payload;
+}
+
+function renderRevisionSection(container, articleId) {
+  const revisionContainer = document.createElement("div");
+  revisionContainer.className = "mt-6 p-4 border-t border-gray-300 dark:border-gray-700";
+
+  revisionContainer.innerHTML = `
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Submit Revision</h2>
+    <input type="file" id="revisionFile" class="w-full p-2 border rounded mb-2" accept=".pdf,.tex" />
+    <textarea id="revisionNotes" rows="3" placeholder="Optional notes..." class="w-full p-2 border rounded mb-2"></textarea>
+    <div class="flex gap-2 items-center">
+      <button id="submitRevisionBtn" class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">Submit Revision</button>
+      <small id="revisionError" class="text-red-600 hidden"></small>
+      <small id="revisionSuccess" class="text-green-600 hidden"></small>
+    </div>
+  `;
+
+  container.appendChild(revisionContainer);
+
+  const fileInput = revisionContainer.querySelector("#revisionFile");
+  const notesInput = revisionContainer.querySelector("#revisionNotes");
+  const submitBtn = revisionContainer.querySelector("#submitRevisionBtn");
+  const errorEl = revisionContainer.querySelector("#revisionError");
+  const successEl = revisionContainer.querySelector("#revisionSuccess");
+
+  submitBtn.addEventListener("click", async () => {
+    errorEl.classList.add("hidden");
+    successEl.classList.add("hidden");
+
+    submitBtn.disabled = true;
+    try {
+      const result = await submitRevision(articleId, fileInput, notesInput);
+      successEl.textContent = "Revision submitted successfully!";
+      successEl.classList.remove("hidden");
+      fileInput.value = "";
+      notesInput.value = "";
+      console.log("Revision result:", result);
+    } catch (err) {
+      console.error("Revision failed:", err);
+      errorEl.textContent = err.message || "Failed to submit revision";
+      errorEl.classList.remove("hidden");
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
 }

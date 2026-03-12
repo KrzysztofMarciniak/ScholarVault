@@ -45,6 +45,8 @@ Route::prefix("v1")->group(function (): void {
             Route::get("/my/comments/{id}", [v1AuthorArticleController::class, "listComments"]);
             // Post comment
             Route::post("/my/comments/{id}", [v1AuthorArticleController::class, "addComment"]);
+            // Revision file route
+            Route::post("/my/revision/{id}", [v1AuthorArticleController::class, "submitRevision"]);
         });
 
         // =========================

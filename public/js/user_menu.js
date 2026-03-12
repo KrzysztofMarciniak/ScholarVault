@@ -28,8 +28,8 @@ export function initUserMenu() {
 
     menu.className = [
         "fixed",
-        "top-12",
-        "right-4",
+        "top-4",
+        "right-20",
         "w-48",
         "shadow-lg",
         "rounded-md",

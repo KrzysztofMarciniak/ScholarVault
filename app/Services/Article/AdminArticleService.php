@@ -15,13 +15,12 @@ class AdminArticleService extends BaseArticleService
 {
     public function listReviewers(int $perPage = 10, ?string $search = null): LengthAwarePaginator
     {
-        $query = User::query()
-            ->where("role_id", Role::REVIEWER);
+        $query = User::query()->where("role_id", Role::REVIEWER);
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search): void {
                 $q->where("name", "like", "%$search%")
-                    ->orWhere("email", "like", "%$search%");
+                  ->orWhere("email", "like", "%$search%");
             });
         }
 
@@ -55,7 +54,8 @@ class AdminArticleService extends BaseArticleService
             "citations:id,title,doi",
             "citedBy:id,title,doi",
             "status:id,name",
-            "reviewers:id,name,email,affiliation,orcid,deactivated", // <-- add reviewers
+            "reviewers:id,name,email,affiliation,orcid,deactivated",
+            "latestFileOfMany"
         ]);
 
         if (!empty($filters["status"])) {
@@ -64,20 +64,35 @@ class AdminArticleService extends BaseArticleService
 
         if (!empty($filters["search"])) {
             $search = $filters["search"];
-            $query->where(
-                fn($q) => $q->where("title", "like", "%$search%")
-                    ->orWhere("abstract", "like", "%$search%"),
-            );
+
+            $query->where(function ($q) use ($search) {
+                $q->where("title", "like", "%$search%")
+                  ->orWhere("abstract", "like", "%$search%");
+            });
         }
 
         $articles = $query->paginate($perPage);
 
-        $articles->getCollection()->transform(fn($article) => [
+        $articles->getCollection()->transform(
+            fn(Article $article) => $this->transformArticle($article)
+        );
+
+        return $articles;
+    }
+
+    private function transformArticle(Article $article): array
+    {
+        $latestFile = $article->latestFileOfMany;
+
+        return [
             "id" => $article->id,
             "title" => $article->title,
             "abstract" => $article->abstract,
-            "filename" => $article->filename,
-            "file_type" => $article->file_type,
+
+            "filename" => $latestFile?->filename,
+            "file_type" => $latestFile?->file_type,
+            "version_number" => $latestFile?->version_number,
+
             "keywords" => $article->keywords,
             "status" => $article->status?->name,
             "doi" => $article->doi,
@@ -115,9 +130,7 @@ class AdminArticleService extends BaseArticleService
                 "orcid" => $r->orcid,
                 "deactivated" => (bool)$r->deactivated,
             ])->values(),
-        ]);
-
-        return $articles;
+        ];
     }
 
     public function assignReviewers(int $articleId, array $reviewerIds): Article
@@ -133,7 +146,6 @@ class AdminArticleService extends BaseArticleService
         }
 
         $article->reviewers()->syncWithoutDetaching($reviewerIds);
-
         $article->load("reviewers");
 
         return $article;
@@ -146,7 +158,7 @@ class AdminArticleService extends BaseArticleService
         if (!$article) {
             return [
                 "status" => "error",
-                "message" => "Article not found",
+                "message" => "Article not found"
             ];
         }
 
@@ -155,27 +167,32 @@ class AdminArticleService extends BaseArticleService
         if (!in_array($status, ["published", "rejected_by_admin"], true)) {
             return [
                 "status" => "error",
-                "message" => 'Invalid status. Only "published" or "rejected_by_admin" allowed.',
+                "message" => 'Invalid status. Only "published" or "rejected_by_admin" allowed.'
             ];
         }
 
-        $newStatus = match($status) {
+        $newStatus = match ($status) {
             "published" => ArticleStatus::PUBLISHED->value,
             "rejected_by_admin" => ArticleStatus::REJECTED_BY_ADMIN->value,
         };
 
-        // Prevent illegal transitions
-        if ($article->status_id === ArticleStatus::REJECTED->value && $newStatus === ArticleStatus::PUBLISHED->value) {
+        if (
+            $article->status_id === ArticleStatus::REJECTED->value &&
+            $newStatus === ArticleStatus::PUBLISHED->value
+        ) {
             return [
                 "status" => "error",
-                "message" => "Cannot publish a rejected article.",
+                "message" => "Cannot publish a rejected article."
             ];
         }
 
-        if ($article->status_id === ArticleStatus::PUBLISHED->value && $newStatus === ArticleStatus::REJECTED_BY_ADMIN->value) {
+        if (
+            $article->status_id === ArticleStatus::PUBLISHED->value &&
+            $newStatus === ArticleStatus::REJECTED_BY_ADMIN->value
+        ) {
             return [
                 "status" => "error",
-                "message" => "Cannot reject an already published article.",
+                "message" => "Cannot reject an already published article."
             ];
         }
 

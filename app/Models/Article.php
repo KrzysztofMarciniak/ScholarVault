@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Article extends Model
 {
@@ -93,6 +94,15 @@ class Article extends Model
                 "title" => $c->title,
                 "doi" => $c->doi,
             ])->values()->all(),
+            // Include uploaded files (revisions)
+            "files" => $this->files->map(fn($f) => [
+                "id" => $f->id,
+                "filename" => $f->filename,
+                "file_type" => $f->file_type,
+                "version_number" => $f->version_number,
+                "uploaded_by" => $f->uploader?->name,
+                "created_at" => $f->created_at,
+            ])->values()->all(),
         ];
     }
 
@@ -101,4 +111,22 @@ class Article extends Model
         return $this->hasMany(ArticleComment::class)
             ->latest();
     }
+
+    /**
+     * All uploaded files / revisions for this article.
+     */
+    public function files()
+    {
+        return $this->hasMany(ArticleFile::class)
+            ->orderByDesc("version_number");
+    }
+    public function latestFile(): ?ArticleFile
+    {
+        return $this->files()->first();
+    }
+
+public function latestFileOfMany(): HasOne
+{
+    return $this->hasOne(ArticleFile::class)->latestOfMany('version_number');
+}
 }

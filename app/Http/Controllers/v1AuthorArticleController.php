@@ -219,20 +219,28 @@ class v1AuthorArticleController extends v1Controller
         ]);
     }
 
-    public function myArticle(Request $request, int $id, AuthorArticleService $service): JsonResponse
-    {
-        $authorId = $request->user()->id;
+public function myArticle(Request $request, int $id, AuthorArticleService $service): JsonResponse
+{
+    $authorId = $request->user()->id;
 
-        $article = $service->viewMyArticle($authorId, $id);
+    $article = $service->viewMyArticle($authorId, $id);
 
-        if ($article === null) {
-            return response()->json([
-                "message" => "Article not found or you do not have access.",
-            ], 404);
-        }
-
-        return response()->json($article, 200);
+    if ($article === null) {
+        return response()->json([
+            "message" => "Article not found or you do not have access.",
+        ], 404);
     }
+
+    $latestFile = $article['files'][0] ?? null;
+    if ($latestFile) {
+        $article['filename'] = $latestFile['filename'];
+        $article['file_type'] = $latestFile['file_type'];
+        $article['version_number'] = $latestFile['version_number'];
+    }
+
+    return response()->json($article, 200);
+}
+
 
     public function listComments(Request $request, int $id, AuthorArticleService $commentsService): JsonResponse
     {
@@ -262,5 +270,33 @@ class v1AuthorArticleController extends v1Controller
             "comment" => $comment->comment,
             "created_at" => $comment->created_at,
         ], 201);
+    }
+
+    public function submitRevision(
+        Request $request,
+        int $id,
+        AuthorArticleService $service,
+    ): JsonResponse {
+        $request->validate([
+            "file" => "required|file|mimes:pdf,tex",
+            "notes" => "nullable|string",
+        ]);
+
+        $file = $request->file("file");
+        $notes = $request->input("notes");
+
+        $revision = $service->submitRevision(
+            $request->user()->id,
+            $id,
+            [
+                "file" => $file,
+                "notes" => $notes,
+            ],
+        );
+
+        return response()->json([
+            "status" => "success",
+            "data" => $revision,
+        ], 200);
     }
 }

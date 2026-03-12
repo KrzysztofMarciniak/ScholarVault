@@ -12,50 +12,51 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class ReviewerArticleService extends BaseArticleService
 {
     public function assignedArticles(User $user, int $perPage = 10): LengthAwarePaginator
-    {
-        $articles = Article::whereHas("reviewers", fn($q) => $q->where("users.id", $user->id))
-            ->with(["authors", "status", "citations", "citedBy"])
-            ->orderByDesc("created_at")
-            ->paginate($perPage);
+{
+    $articles = Article::whereHas("reviewers", fn($q) => $q->where("users.id", $user->id))
+        ->with(["authors", "status", "citations", "citedBy", "files"]) // eager load files
+        ->orderByDesc("created_at")
+        ->paginate($perPage);
 
-        $articles->getCollection()->transform(fn($article) => [
-            "id" => $article->id,
-            "title" => $article->title,
-            "abstract" => $article->abstract,
-            "filename" => $article->filename,
-            "file_type" => $article->file_type,
-            "keywords" => $article->keywords,
-            "doi" => $article->doi,
-            "status" => $article->status?->name,
+    $articles->getCollection()->transform(fn($article) => [
+        "id" => $article->id,
+        "title" => $article->title,
+        "abstract" => $article->abstract,
+        "filename" => $article->latestFileOfMany?->filename ?? $article->filename,
+        "file_type" => $article->latestFileOfMany?->file_type ?? $article->file_type,
+        "version_number" => $article->latestFileOfMany?->version_number,
+        "keywords" => $article->keywords,
+        "doi" => $article->doi,
+        "status" => $article->status?->name,
 
-            "authors" => $article->authors->map(fn($author) => [
-                "id" => $author->id,
-                "name" => $author->name,
-                "email" => $author->email,
-                "role_id" => $author->role_id,
-                "role_name" => $author->role?->name,
-                "affiliation" => $author->affiliation,
-                "bio" => $author->bio,
-                "deactivated" => (bool)$author->deactivated,
-                "orcid" => $author->orcid,
-                "is_primary" => (bool)$author->pivot->is_primary,
-            ])->values(),
+        "authors" => $article->authors->map(fn($author) => [
+            "id" => $author->id,
+            "name" => $author->name,
+            "email" => $author->email,
+            "role_id" => $author->role_id,
+            "role_name" => $author->role?->name,
+            "affiliation" => $author->affiliation,
+            "bio" => $author->bio,
+            "deactivated" => (bool)$author->deactivated,
+            "orcid" => $author->orcid,
+            "is_primary" => (bool)$author->pivot->is_primary,
+        ])->values(),
 
-            "citations" => $article->citations->map(fn($c) => [
-                "id" => $c->id,
-                "title" => $c->title,
-                "doi" => $c->doi,
-            ])->values(),
+        "citations" => $article->citations->map(fn($c) => [
+            "id" => $c->id,
+            "title" => $c->title,
+            "doi" => $c->doi,
+        ])->values(),
 
-            "cited_by" => $article->citedBy->map(fn($c) => [
-                "id" => $c->id,
-                "title" => $c->title,
-                "doi" => $c->doi,
-            ])->values(),
-        ]);
+        "cited_by" => $article->citedBy->map(fn($c) => [
+            "id" => $c->id,
+            "title" => $c->title,
+            "doi" => $c->doi,
+        ])->values(),
+    ]);
 
-        return $articles;
-    }
+    return $articles;
+}
 
     public function assignedArticle(User $user, int $id): ?array
     {
@@ -73,12 +74,15 @@ class ReviewerArticleService extends BaseArticleService
             return null;
         }
 
+        $latestFile = $article->latestFile();
+
         return [
             "id" => $article->id,
             "title" => $article->title,
             "abstract" => $article->abstract,
-            "filename" => $article->filename,
-            "file_type" => $article->file_type,
+            "filename" => $latestFile?->filename ?? $article->filename,
+            "file_type" => $latestFile?->file_type ?? $article->file_type,
+            "version_number" => $latestFile?->version_number,
             "keywords" => $article->keywords,
             "doi" => $article->doi,
             "status" => $article->status?->name,
@@ -125,18 +129,15 @@ class ReviewerArticleService extends BaseArticleService
     {
         $article = Article::with("reviewers")->findOrFail($articleId);
 
-        // Check reviewer assignment
         if (!$article->reviewers->contains($user->id)) {
             abort(403, "You are not assigned to review this article.");
         }
 
-        // Validate data (could also be done externally)
         $validated = validator($data, [
             "recommendation" => "required|string|in:accept,reject,revision_requested",
             "comments" => "required|string|max:5000",
         ])->validate();
 
-        // Create or update review
         $review = Review::updateOrCreate(
             [
                 "article_id" => $article->id,
@@ -154,15 +155,14 @@ class ReviewerArticleService extends BaseArticleService
     {
         $article = Article::with("reviewers")->findOrFail($articleId);
 
-        // upewnij się, że recenzent jest przypisany
         if (!$article->reviewers->contains($reviewerId)) {
-            throw new InvalidArgumentException("You are not assigned to review this article.");
+            throw new \InvalidArgumentException("You are not assigned to review this article.");
         }
 
         $status = match($decision) {
             "accepted" => ArticleStatus::ACCEPTED,
             "rejected" => ArticleStatus::REJECTED,
-            default => throw new InvalidArgumentException("Invalid decision"),
+            default => throw new \InvalidArgumentException("Invalid decision"),
         };
 
         $article->status_id = $status->value;
