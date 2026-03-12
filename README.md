@@ -84,40 +84,40 @@ Assigned Article Details:
 
 ##### **Notifications**
 
-* `/notifications/check` – GET, check new notifications
-* `/notifications/read/{id}` – PATCH, mark single notification read
-* `/notifications/read-all` – PATCH, mark all notifications read
+* `/notifications/check` - GET, check new notifications
+* `/notifications/read/{id}` - PATCH, mark single notification read
+* `/notifications/read-all` - PATCH, mark all notifications read
 * **Middleware:** `auth:sanctum`
 
 ##### **Articles**
 
-* **Public:** `/articles/` – list and show articles
+* **Public:** `/articles/` - list and show articles
 * **Author (Role::AUTHOR):**
 
-  * Submit: `/articles/submit` – POST
-  * List own articles: `/articles/my/list` – GET
-  * View own article: `/articles/my/{id}` – GET
-  * Comments (list/add): `/articles/my/comments/{id}` – GET/POST
-  * Submit revision: `/articles/my/revision/{id}` – POST
+  * Submit: `/articles/submit` - POST
+  * List own articles: `/articles/my/list` - GET
+  * View own article: `/articles/my/{id}` - GET
+  * Comments (list/add): `/articles/my/comments/{id}` - GET/POST
+  * Submit revision: `/articles/my/revision/{id}` - POST
 * **Reviewer (Role::REVIEWER):**
 
-  * Assigned articles: `/articles/assigned` – GET
-  * View assigned article: `/articles/assigned/{id}` – GET
-  * Comment/review: `/articles/assigned/comment/{id}` and `/articles/assigned/{id}/review` – POST
-  * Make decision: `/articles/assigned/decide/{id}` – POST
+  * Assigned articles: `/articles/assigned` - GET
+  * View assigned article: `/articles/assigned/{id}` - GET
+  * Comment/review: `/articles/assigned/comment/{id}` and `/articles/assigned/{id}/review` - POST
+  * Make decision: `/articles/assigned/decide/{id}` - POST
 * **Admin (Role::ADMINISTRATOR):**
 
-  * List all articles: `/articles/admin/` – GET
-  * List reviewers: `/articles/admin/reviewers` – GET
-  * Assign reviewers: `/articles/admin/reviewers/{id}` – PATCH
-  * Accept/reject: `/articles/admin/decide/{id}` – PATCH
+  * List all articles: `/articles/admin/` - GET
+  * List reviewers: `/articles/admin/reviewers` - GET
+  * Assign reviewers: `/articles/admin/reviewers/{id}` - PATCH
+  * Accept/reject: `/articles/admin/decide/{id}` - PATCH
 
 ##### **Registration & Authentication**
 
-* `/register/` – POST, blocked if authenticated
-* `/login/` – POST, blocked if authenticated
-* `/login/logout` – POST, requires auth
-* `/register/help` & `/login/help` – GET
+* `/register/` - POST, blocked if authenticated
+* `/login/` - POST, blocked if authenticated
+* `/login/logout` - POST, requires auth
+* `/register/help` & `/login/help` - GET
 
 ##### **Users**
 
@@ -127,8 +127,8 @@ Assigned Article Details:
 
 ##### **Testing Utilities**
 
-* `/test/` – GET index
-* `/test/sanitization` – POST test middleware
+* `/test/` - GET index
+* `/test/sanitization` - POST test middleware
 
 #### `web.php` (SPA entry point)
 
@@ -160,9 +160,9 @@ Assigned Article Details:
 
 * **Scopes & Helpers:**
 
-  * `scopeAuthoredBy($authorId)` – filter articles by author
-  * `latestFile()` / `latestFileOfMany()` – retrieve most recent uploaded file
-  * `toAuthorDetailArray()` – array representation for author view, includes authors, citations, files
+  * `scopeAuthoredBy($authorId)` - filter articles by author
+  * `latestFile()` / `latestFileOfMany()` - retrieve most recent uploaded file
+  * `toAuthorDetailArray()` - array representation for author view, includes authors, citations, files
 
 #### 2. `ArticleComment`
 
@@ -198,8 +198,8 @@ Assigned Article Details:
   * `user()` → `User` (belongsTo)
 * **Helpers:**
 
-  * `forUser($user, $onlyUnread)` – fetch notifications for a user
-  * `unreadCount($user)` – count unread notifications
+  * `forUser($user, $onlyUnread)` - fetch notifications for a user
+  * `unreadCount($user)` - count unread notifications
 
 #### 7. `Review`
 
@@ -223,8 +223,8 @@ Assigned Article Details:
   * `reviews()` → `Review` (hasMany via `reviewer_id`)
 * **Mutators & Accessors:**
 
-  * `setPasswordAttribute()` – auto-hash
-  * `getDisplayNameAttribute()` – fallback to email
+  * `setPasswordAttribute()` - auto-hash
+  * `getDisplayNameAttribute()` - fallback to email
 * **Helpers:**
 
   * `isAuthor()`, `isReviewer()`, `isAdministrator()`
@@ -252,23 +252,23 @@ Assigned Article Details:
 
 * Extends `Controller`.
 * **Purpose:** Base for versioned API controllers.
-* **Abstract method:** `help(ApiDocsService $apiDocs): JsonResponse` – every v1 controller must provide API usage instructions.
+* **Abstract method:** `help(ApiDocsService $apiDocs): JsonResponse` - every v1 controller must provide API usage instructions.
 
 #### 3. `v1TestController`
 
 * Extends `v1Controller`.
 * **Endpoints:**
 
-  * `GET /api/v1/test` → `index()` – returns a basic success message to confirm API is working.
-  * `GET /api/v1/test/help` → `help(ApiDocsService)` – documents the test endpoint in the API docs.
+  * `GET /api/v1/test` → `index()` - returns a basic success message to confirm API is working.
+  * `GET /api/v1/test/help` → `help(ApiDocsService)` - documents the test endpoint in the API docs.
 
 #### 4. `v1TestMiddlewareSanitization`
 
 * Extends `v1Controller`.
 * **Endpoints:**
 
-  * `POST /api/v1/test/sanitization` → `index(Request)` – returns raw and sanitized request body for fields `email` and `password`.
-  * `GET /api/v1/test/sanitization/help` → `help(ApiDocsService)` – documents expected request structure and response.
+  * `POST /api/v1/test/sanitization` → `index(Request)` - returns raw and sanitized request body for fields `email` and `password`.
+  * `GET /api/v1/test/sanitization/help` → `help(ApiDocsService)` - documents expected request structure and response.
 * **Purpose:** Test request sanitization middleware.
 
 #### 5. `v1LoginController`
@@ -276,9 +276,9 @@ Assigned Article Details:
 * Extends `Controller`.
 * **Endpoints:**
 
-  * `POST /api/v1/login` → `login(Request, AuthService)` – authenticates user, returns API token and user data.
-  * `POST /api/v1/login/logout` → `logout(Request, AuthService)` – revokes current API token, logs out user.
-  * `GET /api/v1/login/help` → `help(ApiDocsService)` – provides API usage instructions for login/logout.
+  * `POST /api/v1/login` → `login(Request, AuthService)` - authenticates user, returns API token and user data.
+  * `POST /api/v1/login/logout` → `logout(Request, AuthService)` - revokes current API token, logs out user.
+  * `GET /api/v1/login/help` → `help(ApiDocsService)` - provides API usage instructions for login/logout.
 * **Error Handling:**
 
   * `AuthenticationException` → 401 Unauthorized
@@ -289,8 +289,8 @@ Assigned Article Details:
 * Extends `Controller`.
 * **Endpoints:**
 
-  * `POST /api/v1/register` → `register(Request, RegistrationService)` – creates a new user. Only assigns the AUTHOR role. Email is normalized to lowercase, password is trimmed.
-  * `GET /api/v1/register/help` → `help(ApiDocsService)` – documents expected request fields and example payload.
+  * `POST /api/v1/register` → `register(Request, RegistrationService)` - creates a new user. Only assigns the AUTHOR role. Email is normalized to lowercase, password is trimmed.
+  * `GET /api/v1/register/help` → `help(ApiDocsService)` - documents expected request fields and example payload.
 * **Validation:** Ensures required fields (`name`, `email`, `password`) and optional fields (`affiliation`, `orcid`, `bio`) conform to types and constraints.
 
 #### 7. `v1NotificationController`
@@ -298,9 +298,9 @@ Assigned Article Details:
 * Extends `Controller`.
 * **Endpoints:**
 
-  * `GET /api/v1/notifications` → `check(Request)` – returns all notifications for authenticated user plus unread count.
-  * `PATCH /api/v1/notifications/read/{id}` → `markRead(Request, int)` – marks a single notification as read.
-  * `PATCH /api/v1/notifications/read-all` → `markAllRead(Request)` – marks all notifications as read.
+  * `GET /api/v1/notifications` → `check(Request)` - returns all notifications for authenticated user plus unread count.
+  * `PATCH /api/v1/notifications/read/{id}` → `markRead(Request, int)` - marks a single notification as read.
+  * `PATCH /api/v1/notifications/read-all` → `markAllRead(Request)` - marks all notifications as read.
 * **Behavior:** Returns 401 if the user is unauthenticated; returns 404 if the notification does not exist or belongs to another user.
 
 #### 8. `v1UserController`
@@ -308,16 +308,16 @@ Assigned Article Details:
 * Extends `v1Controller`.
 * **Endpoints:**
 
-  * `POST /api/v1/users` → `AdminCreateUser(Request, AdminUserService)` – admin-only user creation.
-  * `GET /api/v1/users` → `AllUsers(Request)` – lists all active users with role info (paginated).
-  * `GET /api/v1/users/search` → `SearchUsers(Request)` – search by name, email, or affiliation. Admins see deactivated users and role info.
-  * `PUT/PATCH /api/v1/users/self` → `AnyUserSelfUpdate(Request, AnyUserService)` – authenticated user updates their own profile.
-  * `PATCH /api/v1/users/{id}` → `AdminUpdateUser(Request, int, AdminUserService)` – admin updates any user.
-  * `DELETE /api/v1/users/self` → `SelfDeactivate(Request, AnyUserService)` – deactivate own account.
-  * `DELETE /api/v1/users/{id}` → `AdminDeactivateUser(int, AnyUserService)` – admin deactivates user.
-  * `PATCH /api/v1/users/self/password` → `SelfChangePassword(Request, AnyUserService)` – authenticated user changes password.
-  * `GET /api/v1/users/{id}` → `show(Request, int)` – retrieves specific user's profile.
-  * `GET /api/v1/users/me` → `DisplaySelf(Request)` – retrieves authenticated user’s profile.
+  * `POST /api/v1/users` → `AdminCreateUser(Request, AdminUserService)` - admin-only user creation.
+  * `GET /api/v1/users` → `AllUsers(Request)` - lists all active users with role info (paginated).
+  * `GET /api/v1/users/search` → `SearchUsers(Request)` - search by name, email, or affiliation. Admins see deactivated users and role info.
+  * `PUT/PATCH /api/v1/users/self` → `AnyUserSelfUpdate(Request, AnyUserService)` - authenticated user updates their own profile.
+  * `PATCH /api/v1/users/{id}` → `AdminUpdateUser(Request, int, AdminUserService)` - admin updates any user.
+  * `DELETE /api/v1/users/self` → `SelfDeactivate(Request, AnyUserService)` - deactivate own account.
+  * `DELETE /api/v1/users/{id}` → `AdminDeactivateUser(int, AnyUserService)` - admin deactivates user.
+  * `PATCH /api/v1/users/self/password` → `SelfChangePassword(Request, AnyUserService)` - authenticated user changes password.
+  * `GET /api/v1/users/{id}` → `show(Request, int)` - retrieves specific user's profile.
+  * `GET /api/v1/users/me` → `DisplaySelf(Request)` - retrieves authenticated user’s profile.
 * **Validation & Security:**
 
   * Admin-only operations check role.
