@@ -2,19 +2,82 @@ import { getCurrentUser, setCurrentUser, updateUserMenu } from './user_store.js'
 import { renderLoginForm } from './login.js';
 import { renderRegisterForm } from './register.js';
 import { logout } from './logout.js';
-import { initThemeSwitcher } from './theme.js';
 import { initUserMenu } from './user_menu.js';
 import { renderSidebar } from './sidebar.js';
 import { initNotificationsModal } from "./notifications_ui.js";
+import { initThemeSwitcher } from "./theme_switch.js";
 import { renderSelfUpdate } from './self_update.js';
 import { renderDeleteSelf } from './self_delete.js';
 import { renderChangePassword } from './self_password.js';
 import { createContentContainer } from './layout.js';
 import { renderHome } from "./home.js";
+
 const app = document.getElementById("app");
 
 initUserMenu();
 initNotificationsModal();
+initThemeSwitcher();
+
+/* ------ Inject theme-aware CSS once ------ */
+(function injectAppStyles() {
+  if (document.getElementById("app-theme-styles")) return;
+
+  const style = document.createElement("style");
+  style.id = "app-theme-styles";
+  style.textContent = `
+    .app-container {
+      margin: 1rem;
+    }
+
+    .app-card {
+      background: var(--modal-bg);
+      color: var(--modal-text);
+      border: 1px solid var(--input-border);
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      transition: background 0.2s, color 0.2s, border 0.2s;
+    }
+
+    .menu-btn {
+      width: 100%;
+      text-align: left;
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      background: transparent;
+      color: var(--body-text);
+      border: none;
+    }
+
+    .menu-btn:hover {
+      background: var(--button-hover-bg);
+      color: var(--button-text);
+    }
+
+    .menu-btn-danger:hover {
+      background: var(--notification-error-bg);
+      color: var(--notification-error-text);
+    }
+
+    .menu-btn-accent:hover {
+      background: var(--notification-info-bg);
+      color: var(--notification-info-text);
+    }
+
+    #menuUserInfo {
+      padding: 0.5rem;
+      font-weight: 600;
+      color: var(--body-text);
+    }
+
+    .menu-divider {
+      border-top: 1px solid var(--input-border);
+      margin: 0.5rem 0;
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
 /* ------ Helpers ------ */
 function createMenuButton(menu, label, className, handler, html = false) {
   const li = document.createElement("li");
@@ -49,7 +112,7 @@ function ensureAxiosHeader(token) {
 const loggedMenu = (user, renderCallback) => [
   {
     label: "Update Profile",
-    className: "w-full text-left px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700",
+    className: "menu-btn",
     action: () => {
       renderSelfUpdate(user, updatedUser => {
         setCurrentUser(updatedUser);
@@ -62,23 +125,27 @@ const loggedMenu = (user, renderCallback) => [
   },
 
   {
-    label: `<span class="text-blue-600 dark:text-blue-400">Update Password</span>`,
-    html: true,
-    className: "w-full text-left px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition",
+    label: "Update Password",
+    className: "menu-btn menu-btn-accent",
     action: () => {
-      const content = createContentContainer({ clearApp: false, padded: true, margin: "1rem", border: "1px solid #ccc", extraClasses: "rounded-xl shadow-md bg-white dark:bg-gray-900" });
-      content.innerHTML = "";
+      const content = createContentContainer({
+        padded: true,
+        extraClasses: "app-card app-container"
+      });
+      content.replaceChildren();
       renderChangePassword(() => console.log("Password updated"));
     }
   },
 
   {
-    label: `<span class="text-red-500">Deactivate Account</span>`,
-    html: true,
-    className: "w-full text-left px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition",
+    label: "Deactivate Account",
+    className: "menu-btn menu-btn-danger",
     action: () => {
-      const content = createContentContainer({ clearApp: false, padded: true, margin: "1rem", border: "1px solid #ccc", extraClasses: "rounded-xl shadow-md bg-white dark:bg-gray-900" });
-      content.innerHTML = "";
+      const content = createContentContainer({
+        padded: true,
+        extraClasses: "app-card app-container"
+      });
+      content.replaceChildren();
       renderDeleteSelf(() => {
         localStorage.removeItem("current_user");
         localStorage.removeItem("api_token");
@@ -90,7 +157,7 @@ const loggedMenu = (user, renderCallback) => [
 
   {
     label: "Logout",
-    className: "w-full text-left px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700",
+    className: "menu-btn",
     action: async () => {
       await logout(renderCallback);
       localStorage.removeItem("current_user");
@@ -105,12 +172,12 @@ const loggedMenu = (user, renderCallback) => [
 const guestMenu = (renderCallback) => [
   {
     label: "Login",
-    className: "w-full text-left px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700",
+    className: "menu-btn",
     action: () => renderLoginForm(renderCallback)
   },
   {
     label: "Register",
-    className: "w-full text-left px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700",
+    className: "menu-btn",
     action: () => renderRegisterForm(renderCallback)
   }
 ];
@@ -128,9 +195,8 @@ function renderMenuItems(menuEl, user, renderCallback) {
     userInfoLi.textContent = `${user.name} (${user.role || "User"})`;
     menuEl.appendChild(userInfoLi);
 
-    // divider
     const divider = document.createElement("li");
-    divider.className = "border-t border-gray-200 dark:border-gray-700 my-2";
+    divider.className = "menu-divider";
     menuEl.appendChild(divider);
 
     loggedMenu(user, renderCallback).forEach(item =>
@@ -157,12 +223,9 @@ export function renderMenu(renderCallback) {
 }
 
 export function render() {
-  // use our new container with margin/padding/border
   const content = createContentContainer({
     padded: true,
-    margin: "1rem",
-    border: "1px solid #ccc",
-    extraClasses: "rounded-xl shadow-md bg-white dark:bg-gray-900"
+    extraClasses: "app-card app-container"
   });
 
   const { user } = getAuth();
@@ -184,4 +247,3 @@ export function render() {
 window.render = render;
 
 render();
-initThemeSwitcher();

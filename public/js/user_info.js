@@ -4,6 +4,153 @@ import { deleteUserAdmin } from "./admin_delete_user.js";
 
 const app = document.getElementById("app");
 
+let __userStylesInjected = false;
+
+function ensureUserStyles() {
+  if (__userStylesInjected) return;
+
+  const style = document.createElement("style");
+  style.id = "admin-user-theme";
+
+  style.textContent = `
+    .user-info-list {
+      list-style: none;
+      margin: 0 0 1.5rem 0;
+      padding: 0;
+      display: grid;
+      gap: 0.5rem;
+      color: var(--text-color-a);
+    }
+
+    .user-info-list li {
+      line-height: 1.5;
+    }
+
+    .user-info-list a {
+      color: var(--primary-color-a);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .user-info-list a:hover {
+      color: var(--primary-color-b);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .admin-controls-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 1rem 0;
+      color: var(--text-color-a);
+    }
+
+    .admin-user-form {
+      display: grid;
+      gap: 1rem;
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      border: 2px solid var(--primary-color-b);
+      background: var(--text-color-b);
+      color: var(--text-color-a);
+    }
+
+    .admin-user-field {
+      width: 100%;
+      padding: 0.625rem 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--primary-color-b);
+      background: var(--background-color);
+      color: var(--text-color-a);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .admin-user-field:focus {
+      border-color: var(--primary-color-a);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+      background: var(--background-color);
+    }
+
+    .admin-user-save {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--primary-color-b);
+      border-radius: 0.5rem;
+      background: var(--primary-color-a);
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .admin-user-save:hover {
+      background: var(--primary-color-b);
+      border-color: var(--primary-color-a);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .admin-user-save:active {
+      transform: translateY(0);
+    }
+
+    .admin-user-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .admin-user-msg {
+      display: block;
+      min-height: 1.25rem;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+      font-weight: 500;
+    }
+
+    .admin-user-deactivate-wrap {
+      margin-top: 1rem;
+    }
+
+    .admin-user-deactivate {
+      padding: 0.625rem 1rem;
+      border-radius: 0.5rem;
+      border: 2px solid #991b1b;
+      background: #dc2626;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .admin-user-deactivate:hover {
+      background: #991b1b;
+      border-color: #dc2626;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    }
+
+    .admin-user-deactivate:active {
+      transform: translateY(0);
+    }
+
+    .admin-user-deactivated {
+      font-size: 0.875rem;
+      color: var(--text-color-a);
+      opacity: 0.75;
+      padding: 0.75rem;
+      background: var(--background-color);
+      border-radius: 0.5rem;
+      border-left: 3px solid #dc2626;
+    }
+  `;
+
+  document.head.appendChild(style);
+  __userStylesInjected = true;
+}
+
 async function apiGet(path) {
   const token = localStorage.getItem("api_token");
   if (!token) throw new Error("Not authenticated");
@@ -11,14 +158,15 @@ async function apiGet(path) {
   const res = await fetch(path, {
     headers: {
       Accept: "application/json",
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!res.ok) {
     let errJson = {};
-    try { errJson = await res.json(); } catch {}
-
+    try {
+      errJson = await res.json();
+    } catch {}
     const msg = errJson?.message || res.statusText || `HTTP ${res.status}`;
     throw new Error(msg);
   }
@@ -37,21 +185,21 @@ export async function fetchCurrentUser() {
 /* ---------------- USER VIEW ---------------- */
 
 export function renderUserInfo(user) {
+  ensureUserStyles();
 
   const container = createContentContainer({
     padded: true,
     margin: "2rem auto",
-    border: "1px solid #ccc",
+    border: "1px solid var(--input-border)",
     extraClasses: "max-w-3xl",
     title: user.name || "User",
-    icon: "fa-solid fa-user"
+    icon: "fa-solid fa-user",
   });
 
   const deactivated = user.deactivated ? "yes" : "no";
 
   const list = document.createElement("ul");
-  list.className = "space-y-2 text-gray-700 dark:text-gray-300 mb-6";
-
+  list.className = "user-info-list";
   list.innerHTML = `
     <li><strong>ID:</strong> ${user.id}</li>
     <li><strong>Email:</strong> ${user.email}</li>
@@ -61,11 +209,7 @@ export function renderUserInfo(user) {
       <strong>ORCID:</strong>
       ${
         user.orcid
-          ? `<a href="https://orcid.org/${user.orcid}"
-               target="_blank"
-               class="text-green-600 hover:text-green-700">
-               ${user.orcid}
-             </a>`
+          ? `<a href="https://orcid.org/${user.orcid}" target="_blank" rel="noopener noreferrer">${user.orcid}</a>`
           : "-"
       }
     </li>
@@ -86,61 +230,35 @@ export function renderUserInfo(user) {
 /* ---------------- ADMIN CONTROLS ---------------- */
 
 function renderAdminControls(user) {
-
   const adminArea = document.getElementById("adminArea");
+  if (!adminArea) return;
 
   const deactivateHTML = user.deactivated
-    ? `<div class="text-sm text-gray-500">User already deactivated.</div>`
-    : `<button id="deactivateBtn"
-         class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded">
-         Deactivate User
-       </button>`;
+    ? `<div class="admin-user-deactivated"><i class="fa-solid fa-info-circle"></i> User already deactivated.</div>`
+    : `<button id="deactivateBtn" type="button" class="admin-user-deactivate"><i class="fa-solid fa-ban"></i> Deactivate User</button>`;
 
   adminArea.innerHTML = `
+    <h2 class="admin-controls-title">Admin Controls</h2>
 
-    <h2 class="text-xl font-semibold mb-4">
-      Admin Controls
-    </h2>
+    <form id="adminUserForm" class="admin-user-form">
+      <input name="name" value="${user.name ?? ""}" class="admin-user-field" placeholder="Name">
 
-    <form id="adminUserForm"
-      class="space-y-4 p-6 rounded-lg border
-             border-gray-200 dark:border-gray-700
-             bg-gray-50 dark:bg-gray-800">
+      <input name="email" type="email" value="${user.email ?? ""}" class="admin-user-field" required>
 
-      <input name="name" value="${user.name ?? ""}"
-        class="w-full p-2 rounded border dark:bg-gray-700"
-        placeholder="Name">
+      <input name="role_id" type="number" value="${user.role_id ?? ""}" class="admin-user-field" required>
 
-      <input name="email" type="email" value="${user.email ?? ""}"
-        class="w-full p-2 rounded border dark:bg-gray-700"
-        required>
+      <input name="affiliation" value="${user.affiliation ?? ""}" class="admin-user-field" placeholder="Affiliation">
 
-      <input name="role_id" type="number" value="${user.role_id ?? ""}"
-        class="w-full p-2 rounded border dark:bg-gray-700"
-        required>
+      <input name="orcid" value="${user.orcid ?? ""}" class="admin-user-field" placeholder="ORCID">
 
-      <input name="affiliation" value="${user.affiliation ?? ""}"
-        class="w-full p-2 rounded border dark:bg-gray-700"
-        placeholder="Affiliation">
+      <input name="bio" value="${user.bio ?? ""}" class="admin-user-field" placeholder="Bio">
 
-      <input name="orcid" value="${user.orcid ?? ""}"
-        class="w-full p-2 rounded border dark:bg-gray-700"
-        placeholder="ORCID">
+      <button type="submit" class="admin-user-save"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
 
-      <input name="bio" value="${user.bio ?? ""}"
-        class="w-full p-2 rounded border dark:bg-gray-700"
-        placeholder="Bio">
-
-      <button type="submit"
-        class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
-        Save Changes
-      </button>
-
-      <small id="adminMsg" class="block text-sm mt-2"></small>
-
+      <small id="adminMsg" class="admin-user-msg"></small>
     </form>
 
-    <div class="mt-4">
+    <div class="admin-user-deactivate-wrap">
       ${deactivateHTML}
     </div>
   `;
@@ -151,57 +269,44 @@ function renderAdminControls(user) {
 /* ---------------- EVENTS ---------------- */
 
 function wireAdminEvents(user) {
-
   const form = document.getElementById("adminUserForm");
   const msg = document.getElementById("adminMsg");
 
-  form.onsubmit = async (e) => {
+  if (form) {
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      msg.textContent = "";
+      msg.className = "admin-user-msg";
 
-    e.preventDefault();
-    msg.textContent = "";
+      const data = Object.fromEntries(new FormData(form).entries());
 
-    const data = Object.fromEntries(new FormData(form).entries());
-
-    try {
-
-      await updateUserAdmin(user.id, data);
-
-      msg.textContent = "User updated successfully";
-      msg.className = "text-green-600";
-
-    } catch (err) {
-
-      msg.textContent = err.message || "Update failed";
-      msg.className = "text-red-600";
-
-    }
-  };
+      try {
+        await updateUserAdmin(user.id, data);
+        msg.textContent = "✓ User updated successfully";
+        msg.style.color = "#16a34a";
+      } catch (err) {
+        msg.textContent = "✗ " + (err.message || "Update failed");
+        msg.style.color = "#dc2626";
+      }
+    };
+  }
 
   const deactivateBtn = document.getElementById("deactivateBtn");
 
   if (deactivateBtn) {
-
     deactivateBtn.onclick = async () => {
-
       if (!confirm("Deactivate this user?")) return;
 
       try {
-
         const res = await deleteUserAdmin(user.id);
-
         alert(res?.message || "User deactivated");
 
         const refreshed = await fetchUser(user.id);
-
         renderUserInfo(refreshed);
         renderAdminControls(refreshed);
-
       } catch (err) {
-
         alert(err.message || "Failed to deactivate");
-
       }
-
     };
   }
 }
@@ -209,21 +314,15 @@ function wireAdminEvents(user) {
 /* ---------------- MAIN ---------------- */
 
 export async function showUser(id) {
-
   try {
-
     const user = await fetchUser(id);
-
     renderUserInfo(user);
 
     const current = await fetchCurrentUser();
-
     if (current?.role === "Administrator") {
       renderAdminControls(user);
     }
-
   } catch (err) {
-
     app.innerHTML = `
       <div class="flex items-center justify-center py-10 text-red-600">
         Failed to load user: ${err.message}

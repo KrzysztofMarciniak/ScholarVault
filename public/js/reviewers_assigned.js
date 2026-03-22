@@ -7,6 +7,143 @@ import {
   renderError
 } from "./article_list.js";
 
+let __assignedArticlesStylesInjected = false;
+
+function ensureAssignedArticleStyles() {
+  if (__assignedArticlesStylesInjected) return;
+
+  const style = document.createElement("style");
+  style.id = "assigned-articles-theme";
+
+  style.textContent = `
+    .article-list-clickable {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .article-list-clickable [data-article-id],
+    .article-list-clickable [data-id],
+    .article-list-clickable [data-article] {
+      cursor: pointer;
+      padding: 1rem;
+      border-radius: 0.375rem;
+      border: 1px solid var(--primary-color-b);
+      background: var(--background-color);
+      color: var(--text-color-a);
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .article-list-clickable [data-article-id]:hover,
+    .article-list-clickable [data-id]:hover,
+    .article-list-clickable [data-article]:hover {
+      background: var(--text-color-b);
+      border-color: var(--primary-color-a);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateX(4px);
+    }
+
+    .article-list-clickable [data-article-id]:focus-visible,
+    .article-list-clickable [data-id]:focus-visible,
+    .article-list-clickable [data-article]:focus-visible {
+      outline: 2px solid var(--primary-color-a);
+      outline-offset: 2px;
+    }
+
+    .article-list-clickable [data-article-id]:active,
+    .article-list-clickable [data-id]:active,
+    .article-list-clickable [data-article]:active {
+      transform: translateX(2px);
+    }
+
+    .assigned-article-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-color-a);
+      margin-bottom: 0.35rem;
+    }
+
+    .assigned-article-meta {
+      font-size: 0.8rem;
+      color: var(--text-color-a);
+      opacity: 0.7;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .assigned-article-status {
+      display: inline-block;
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.25rem;
+      background: var(--primary-color-a);
+      color: white;
+      font-weight: 600;
+      font-size: 0.7rem;
+    }
+
+    .assigned-loading {
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-color-a);
+    }
+
+    .assigned-empty {
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-color-a);
+      opacity: 0.7;
+    }
+
+    .assigned-error {
+      padding: 2rem;
+      color: #dc2626;
+      font-weight: 500;
+    }
+
+    .assigned-pagination {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .assigned-pagination-btn {
+      padding: 0.35rem 0.65rem;
+      border: 1px solid var(--primary-color-b);
+      border-radius: 0.375rem;
+      background: var(--background-color);
+      color: var(--text-color-a);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      font-size: 0.85rem;
+    }
+
+    .assigned-pagination-btn:hover {
+      background: var(--text-color-b);
+      border-color: var(--primary-color-a);
+    }
+
+    .assigned-pagination-btn.active {
+      background: var(--primary-color-a);
+      color: white;
+      border-color: var(--primary-color-a);
+    }
+
+    .assigned-pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  `;
+
+  document.head.appendChild(style);
+  __assignedArticlesStylesInjected = true;
+}
+
 /** Fetch assigned articles for reviewer */
 async function fetchAssignedArticles(page = 1, perPage = 10) {
   const token = getToken();
@@ -69,7 +206,6 @@ function enhanceListInteractivity(container, onItemClick) {
   const ensureFocusable = (row) => {
     if (!row.hasAttribute("tabindex")) row.setAttribute("tabindex", "0");
     if (!row.getAttribute("role")) row.setAttribute("role", "button");
-    // add a visually-hidden outline on focus if you prefer custom styling; CSS handles it below.
   };
 
   // When the list is dynamic, we use mutation observer to ensure new rows become focusable
@@ -113,21 +249,14 @@ function enhanceListInteractivity(container, onItemClick) {
 }
 
 /**
- * Apply Tailwind hover styles to article rows from this file only.
+ * Apply theme-aware styles to article rows.
  * Looks for elements with data-article-id, data-id, or data-article.
  */
 function applyHoverStyles(container) {
   if (!container) return;
   const rows = container.querySelectorAll('[data-article-id],[data-id],[data-article]');
   rows.forEach(row => {
-    row.classList.add(
-      "cursor-pointer",
-      "hover:bg-gray-100",
-      "dark:hover:bg-gray-800",
-      "transition-colors"
-    );
-    // optional focus ring for keyboard users
-    row.classList.add("focus:outline-none", "focus:ring-2", "focus:ring-indigo-500");
+    row.classList.add("article-list-item");
   });
 
   // If new rows may be injected later, observe and apply classes to them as well.
@@ -136,27 +265,11 @@ function applyHoverStyles(container) {
       Array.from(m.addedNodes || []).forEach(node => {
         if (!(node instanceof HTMLElement)) return;
         if (node.matches && node.matches('[data-article-id],[data-id],[data-article]')) {
-          node.classList.add(
-            "cursor-pointer",
-            "hover:bg-gray-100",
-            "dark:hover:bg-gray-800",
-            "transition-colors",
-            "focus:outline-none",
-            "focus:ring-2",
-            "focus:ring-indigo-500"
-          );
+          node.classList.add("article-list-item");
         } else {
           // scan subtree
           node.querySelectorAll && node.querySelectorAll('[data-article-id],[data-id],[data-article]').forEach(n => {
-            n.classList.add(
-              "cursor-pointer",
-              "hover:bg-gray-100",
-              "dark:hover:bg-gray-800",
-              "transition-colors",
-              "focus:outline-none",
-              "focus:ring-2",
-              "focus:ring-indigo-500"
-            );
+            n.classList.add("article-list-item");
           });
         }
       });
@@ -167,6 +280,8 @@ function applyHoverStyles(container) {
 
 /** Render assigned articles list */
 export async function renderAssigned(page = 1, mountSelector = null) {
+  ensureAssignedArticleStyles();
+
   const perPage = 10;
   const container = resolveMount(mountSelector);
 
@@ -183,7 +298,7 @@ export async function renderAssigned(page = 1, mountSelector = null) {
     };
 
     if (!articles.length) {
-      renderEmpty(container, `<p class="py-6 text-center text-gray-500 dark:text-gray-400">No assigned articles.</p>`);
+      renderEmpty(container, `<div class="assigned-empty"><i class="fa-solid fa-inbox"></i> No assigned articles.</div>`);
       return;
     }
 

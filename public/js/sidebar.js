@@ -1,282 +1,211 @@
-// sidebar.js
+import { getCurrentTheme, themes } from "./theme_switch.js";
 
+// --- Helpers ---
 function getUserRoles(user) {
-    if (!user || !user.role) return [];
-
-    if (Array.isArray(user.role)) {
-        return user.role.map(r => String(r).toLowerCase());
-    }
-
-    return [String(user.role).toLowerCase()];
+  if (!user || !user.role) return [];
+  return Array.isArray(user.role)
+    ? user.role.map(r => String(r).toLowerCase())
+    : [String(user.role).toLowerCase()];
 }
 
 function createSidebarButton(btn) {
-    const button = document.createElement("button");
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "sidebar-btn";
 
-    button.type = "button";
-    button.className = `
-        flex items-center gap-2
-        bg-gray-200 dark:bg-gray-700
-        hover:bg-gray-300 dark:hover:bg-gray-600
-        text-gray-800 dark:text-gray-100
-        font-medium py-1 px-3 rounded
-        transition-colors duration-150
-        btn-icon-only
-    `;
+  const icon = document.createElement("i");
+  icon.className = btn.icon + " sidebar-icon";
 
-    const icon = document.createElement("i");
-    icon.className = btn.icon + " text-lg";
+  const label = document.createElement("span");
+  label.className = "label";
+  label.textContent = btn.label;
 
-    const label = document.createElement("span");
-    label.className = "label";
-    label.textContent = btn.label;
+  button.append(icon, label);
+  if (typeof btn.onClick === "function") button.onclick = btn.onClick;
 
-    button.append(icon, label);
-
-    if (typeof btn.onClick === "function") {
-        button.onclick = btn.onClick;
-    }
-
-    return button;
+  return button;
 }
 
 function renderSection(section) {
-    const container = document.createElement("div");
-    container.className = "flex flex-col gap-2";
-
-    section.buttons.forEach(btn => {
-        container.appendChild(createSidebarButton(btn));
-    });
-
-    return container;
+  const container = document.createElement("div");
+  container.className = "sidebar-section";
+  section.buttons.forEach(btn => container.appendChild(createSidebarButton(btn)));
+  return container;
 }
 
 function createToggleButton(sidebar) {
-    let minimized = true;
-    sidebar.classList.add("minimized");
+  let minimized = true;
+  sidebar.classList.add("minimized");
 
-    const toggleButton = document.createElement("button");
+  const toggleButton = document.createElement("button");
+  toggleButton.className = "sidebar-toggle";
+  toggleButton.setAttribute("aria-label", "Toggle sidebar");
+  toggleButton.innerHTML = `<i class="fa-solid fa-chevron-right"></i>`;
 
-    toggleButton.innerHTML = `<i class="fa-solid fa-chevron-right"></i>`;
+  toggleButton.onclick = () => {
+    minimized = !minimized;
+    sidebar.classList.toggle("minimized", minimized);
+    toggleButton.innerHTML = minimized
+      ? `<i class="fa-solid fa-chevron-right"></i>`
+      : `<i class="fa-solid fa-chevron-left"></i>`;
+  };
 
-    toggleButton.className = `
-        self-end mb-2
-        text-gray-700 dark:text-gray-200
-        hover:text-gray-900 dark:hover:text-white
-        text-xl
-        transition-colors duration-150
-    `;
-
-    toggleButton.setAttribute("aria-label", "Toggle sidebar");
-
-    toggleButton.onclick = () => {
-        minimized = !minimized;
-
-        sidebar.classList.toggle("minimized", minimized);
-
-        toggleButton.innerHTML = minimized
-            ? `<i class="fa-solid fa-chevron-right"></i>`
-            : `<i class="fa-solid fa-chevron-left"></i>`;
-    };
-
-    return toggleButton;
+  return toggleButton;
 }
 
-function buildSections(roles, callbacks) {
+function buildSections(roles) {
+  const sections = [];
 
-    const sections = [];
-
-    // --- Common section ---
-    sections.push({
-        buttons: [
-            {
-                label: "Users",
-                icon: "fa-solid fa-users",
-                onClick: () =>
-                    import('./all_users.js').then(m => m.renderUsers())
-            },
-{
-                label: "Search Users",
-                icon: "fa-solid fa-magnifying-glass",
-                onClick: () => {
-                    import('./search_user.js').then(mod => {
-
-                        const query = prompt("Enter search query (min 2 chars):");
-
-                        if (!query || query.length < 2)
-                            return alert("Query too short");
-
-                        const container = document.getElementById("app");
-
-                        if (container) {
-                            mod.renderSearchResults(container, query);
-                        }
-
-                    });
-                }
-            },
-            {
-                label: "Published Articles",
-                icon:"fa-solid fa-newspaper",
-                onClick: ()=>import ('./articles.js').then(m=>m.renderArticles())
-            }
-
-        ]
-    });
-
-    // --- Admin section ---
-if (roles.includes("administrator")) {
+  // --- Common ---
   sections.push({
     buttons: [
-      {
-        label: "Create User",
-        icon: "fa-solid fa-user-plus",
-        onClick: async () => {
-          try {
-            const module = await import("./admin_create_user.js");
-            module.renderAdminCreateUser();
-          } catch (err) {
-            console.error("Failed to load admin_create_user module:", err);
-          }
-        }
-      },
-      {
-        label: "Manage Articles",
-        icon: "fa-solid fa-newspaper",
-        onClick: async () => {
-          try {
-            const module = await import("./admin_list_articles.js");
-            module.renderAdminArticles();
-          } catch (err) {
-            console.error("Failed to load admin_list_articles module:", err);
-          }
-        }
-      }
+      { label: "Users", icon: "fa-solid fa-users", onClick: () => import('./all_users.js').then(m => m.renderUsers()) },
+      { label: "Search Users", icon: "fa-solid fa-magnifying-glass", onClick: async () => {
+        const mod = await import('./search_user.js');
+        const query = prompt("Enter search query (min 2 chars):");
+        if (!query || query.length < 2) return alert("Query too short");
+        const container = document.getElementById("app");
+        if (container) mod.renderSearchResults(container, query);
+      }},
+      { label: "Published Articles", icon: "fa-solid fa-newspaper", onClick: () => import('./articles.js').then(m => m.renderArticles()) }
     ]
   });
-}
 
-    // --- Author section ---
-if (roles.includes("author")) {
-  sections.push({
-    title: "Author",
-    buttons: [
-      {
-        label: "Submit Article",
-        icon: "fa-solid fa-file-arrow-up",
-        onClick: async () => {
+  // --- Admin ---
+  if (roles.includes("administrator")) {
+    sections.push({
+      buttons: [
+        { label: "Create User", icon: "fa-solid fa-user-plus", onClick: async () => {
+          const module = await import("./admin_create_user.js");
+          module.renderAdminCreateUser();
+        }},
+        { label: "Manage Articles", icon: "fa-solid fa-newspaper", onClick: async () => {
+          const module = await import("./admin_list_articles.js");
+          module.renderAdminArticles();
+        }}
+      ]
+    });
+  }
+
+  // --- Author ---
+  if (roles.includes("author")) {
+    sections.push({
+      buttons: [
+        { label: "Submit Article", icon: "fa-solid fa-file-arrow-up", onClick: async () => {
           const module = await import("./author_submit_article.js");
           module.renderSubmitArticle();
-        }
-      },
-            {
-                label: "My Articles",
-                icon: "fa-solid fa-file-lines",
-                onClick: async () => {
-                    const module = await import("./author_my_articles.js");
-                    module.renderMyArticles();
-                }
-            }
-    ]
-  });
-}
-
-    // --- Reviewer section ---
-    if (roles.includes("reviewer")) {
-        sections.push({
-            buttons: [
-{
-                label: "Assigned Reviews",
-                icon: "fa-solid fa-tasks",
-                onClick: async () => {
-                    const module = await import("./reviewers_assigned.js");
-                    module.renderAssigned();
-                }
-            }
-            ]
-        });
-    }
-
-    return sections;
-}
-
-function ensureSidebarStyles() {
-
-    if (document.getElementById("sidebar-minimized-styles"))
-        return;
-
-    const style = document.createElement("style");
-
-    style.id = "sidebar-minimized-styles";
-
-    style.textContent = `
-        #sidebar.minimized { width: 4rem !important; }
-
-        #sidebar.minimized h2,
-        #sidebar.minimized .label {
-            display: none !important;
-        }
-
-        #sidebar.minimized .btn-icon-only {
-            justify-content: center;
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
-        }
-
-        #sidebar.minimized button:focus,
-        #sidebar.minimized button:focus-visible {
-            outline: none !important;
-            box-shadow: none !important;
-        }
-    `;
-
-    document.head.appendChild(style);
-}
-
-export function renderSidebar(renderCallbacks = {}) {
-
-    let sidebar = document.getElementById("sidebar");
-
-    if (!sidebar) {
-        sidebar = document.createElement("nav");
-
-        sidebar.id = "sidebar";
-
-        sidebar.className = `
-            fixed left-0 top-0
-            h-full w-56
-            bg-gray-100 dark:bg-gray-800
-            shadow-lg
-            p-4
-            flex flex-col gap-4
-            overflow-y-auto
-            z-50
-            transition-all duration-300
-        `;
-
-        document.body.appendChild(sidebar);
-    }
-
-    ensureSidebarStyles();
-
-    sidebar.innerHTML = "";
-
-    let user = null;
-
-    try {
-        const raw = localStorage.getItem("current_user");
-        user = raw ? JSON.parse(raw) : null;
-    } catch {
-        user = null;
-    }
-
-    const roles = getUserRoles(user);
-
-    const sections = buildSections(roles, renderCallbacks);
-
-    sidebar.appendChild(createToggleButton(sidebar));
-
-    sections.forEach(section => {
-        sidebar.appendChild(renderSection(section));
+        }},
+        { label: "My Articles", icon: "fa-solid fa-file-lines", onClick: async () => {
+          const module = await import("./author_my_articles.js");
+          module.renderMyArticles();
+        }}
+      ]
     });
+  }
+
+  // --- Reviewer ---
+  if (roles.includes("reviewer")) {
+    sections.push({
+      buttons: [
+        { label: "Assigned Reviews", icon: "fa-solid fa-tasks", onClick: async () => {
+          const module = await import("./reviewers_assigned.js");
+          module.renderAssigned();
+        }}
+      ]
+    });
+  }
+
+  return sections;
+}
+
+export function ensureSidebarStyles() {
+  if (document.getElementById("sidebar-theme-styles")) return;
+
+  const style = document.createElement("style");
+  style.id = "sidebar-theme-styles";
+  style.textContent = `
+    #sidebar {
+      background-color: var(--primary-color-a);
+      color: var(--text-color-a);
+      width: 14rem;
+      transition: width 0.3s, background-color 0.3s, color 0.3s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 1rem;
+      overflow-y: auto;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      z-index: 50;
+      box-sizing: content-box;
+
+    }
+
+    #sidebar.minimized { width: 4rem; }
+    #sidebar.minimized .label { display: none; }
+
+    .sidebar-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--primary-color-b);
+      color: white;
+      border: 1px solid var(--primary-color-b);
+      border-radius: 0.375rem;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sidebar-btn:hover {
+      opacity: 0.8;
+    }
+
+    .sidebar-icon {
+      color: white;
+      font-size: 1rem;
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-toggle {
+      align-self: flex-end;
+      margin-bottom: 0.5rem;
+      font-size: 1.25rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-color-a);
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// --- Render sidebar ---
+export function renderSidebar() {
+  let sidebar = document.getElementById("sidebar");
+  if (!sidebar) {
+    sidebar = document.createElement("nav");
+    sidebar.id = "sidebar";
+    document.body.appendChild(sidebar);
+  }
+
+  ensureSidebarStyles();
+  sidebar.innerHTML = "";
+
+  let user = null;
+  try { user = JSON.parse(localStorage.getItem("current_user")); } catch { user = null; }
+  const roles = getUserRoles(user);
+
+  sidebar.appendChild(createToggleButton(sidebar));
+
+  const sections = buildSections(roles);
+  sections.forEach(section => sidebar.appendChild(renderSection(section)));
 }

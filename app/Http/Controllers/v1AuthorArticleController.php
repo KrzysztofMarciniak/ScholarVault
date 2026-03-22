@@ -193,31 +193,31 @@ class v1AuthorArticleController extends v1Controller
     }
 
     public function myArticles(Request $request, AuthorArticleService $service): JsonResponse
-{
-    $authorId = $request->user("sanctum")->id;
-    $perPage = (int)$request->query("per_page", 10);
+    {
+        $authorId = $request->user("sanctum")->id;
+        $perPage = (int)$request->query("per_page", 10);
 
-    $articles = $service->listMyArticles($authorId, $perPage);
+        $articles = $service->listMyArticles($authorId, $perPage);
 
-    $data = $articles->getCollection()->map(fn($article) => [
-        "id" => $article['id'] ?? null,
-        "title" => $article['title'] ?? null,
-        "abstract" => $article['abstract'] ?? null,
-        "doi" => $article['doi'] ?? null,
-        "status" => $article['status'] ?? null,
-    ])->values();
+        $data = $articles->getCollection()->map(fn($article) => [
+            "id" => $article["id"] ?? null,
+            "title" => $article["title"] ?? null,
+            "abstract" => $article["abstract"] ?? null,
+            "doi" => $article["doi"] ?? null,
+            "status" => $article["status"] ?? null,
+        ])->values();
 
-    return response()->json([
-        "status" => "success",
-        "data" => $data,
-        "pagination" => [
-            "current_page" => $articles->currentPage(),
-            "per_page" => $articles->perPage(),
-            "total" => $articles->total(),
-            "last_page" => $articles->lastPage(),
-        ],
-    ]);
-}
+        return response()->json([
+            "status" => "success",
+            "data" => $data,
+            "pagination" => [
+                "current_page" => $articles->currentPage(),
+                "per_page" => $articles->perPage(),
+                "total" => $articles->total(),
+                "last_page" => $articles->lastPage(),
+            ],
+        ]);
+    }
 
     public function myArticle(Request $request, int $id, AuthorArticleService $service): JsonResponse
     {

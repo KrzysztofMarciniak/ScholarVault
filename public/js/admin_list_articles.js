@@ -3,6 +3,321 @@ import { createContentContainer } from "./layout.js";
 import { getToken } from "./get_token.js";
 import { notifySuccess, notifyError } from "./notification.js";
 
+let __adminArticlesStylesInjected = false;
+
+function ensureAdminArticleStyles() {
+  if (__adminArticlesStylesInjected) return;
+
+  const style = document.createElement("style");
+  style.id = "admin-articles-theme";
+
+  style.textContent = `
+    .admin-article-wrapper {
+      display: flex;
+      flex-direction: row;
+      gap: 1rem;
+      width: 100%;
+      min-height: 60vh;
+    }
+
+    .admin-article-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .admin-article-filters {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .admin-search-input,
+    .admin-status-filter {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--primary-color-b);
+      border-radius: 0.375rem;
+      background: var(--background-color);
+      color: var(--text-color-a);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .admin-search-input:focus,
+    .admin-status-filter:focus {
+      border-color: var(--primary-color-a);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+    }
+
+    .admin-filter-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--primary-color-b);
+      border-radius: 0.375rem;
+      background: var(--primary-color-a);
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .admin-filter-btn:hover {
+      background: var(--primary-color-b);
+      border-color: var(--primary-color-a);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .admin-filter-btn:active {
+      transform: translateY(0);
+    }
+
+    .admin-article-list {
+      flex: 1;
+      overflow-y: auto;
+      border-right: 2px solid var(--primary-color-b);
+    }
+
+    .admin-article-item {
+      cursor: pointer;
+      padding: 1rem;
+      border-bottom: 1px solid var(--text-color-b);
+      background: var(--background-color);
+      color: var(--text-color-a);
+      transition: all 0.2s ease;
+    }
+
+    .admin-article-item:hover {
+      background: var(--text-color-b);
+      border-left: 3px solid var(--primary-color-a);
+      padding-left: calc(1rem - 3px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transform: translateX(2px);
+    }
+
+    .admin-article-item-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-color-a);
+      margin-bottom: 0.35rem;
+    }
+
+    .admin-article-item-meta {
+      font-size: 0.75rem;
+      color: var(--text-color-a);
+      opacity: 0.7;
+    }
+
+    .admin-article-sidebar {
+      width: 40%;
+      max-height: 60vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      background: var(--text-color-b);
+      border-radius: 0.75rem;
+      border: 2px solid var(--primary-color-b);
+    }
+
+    .admin-article-sidebar-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-color-a);
+      margin-bottom: 1rem;
+    }
+
+    .admin-article-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .admin-article-section h3 {
+      font-weight: 600;
+      color: var(--text-color-a);
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .admin-article-abstract {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--text-color-a);
+      margin-bottom: 1rem;
+    }
+
+    .admin-article-file-link {
+      color: var(--primary-color-a);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .admin-article-file-link:hover {
+      color: var(--primary-color-b);
+      text-decoration: underline;
+    }
+
+    .admin-article-meta-row {
+      font-size: 0.85rem;
+      color: var(--text-color-a);
+      opacity: 0.85;
+      line-height: 1.6;
+      margin-bottom: 0.5rem;
+    }
+
+    .admin-reviewer-list {
+      list-style: disc;
+      padding-left: 1.25rem;
+      font-size: 0.85rem;
+      color: var(--text-color-a);
+    }
+
+    .admin-reviewer-item {
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .admin-action-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .admin-publish-btn,
+    .admin-reject-btn,
+    .admin-assign-btn {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      border: 1px solid transparent;
+      border-radius: 0.375rem;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .admin-publish-btn {
+      background: #16a34a;
+      border-color: #15803d;
+    }
+
+    .admin-publish-btn:hover:not(:disabled) {
+      background: #15803d;
+      border-color: #16a34a;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+    }
+
+    .admin-reject-btn {
+      background: #dc2626;
+      border-color: #991b1b;
+    }
+
+    .admin-reject-btn:hover:not(:disabled) {
+      background: #991b1b;
+      border-color: #dc2626;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+    }
+
+    .admin-assign-btn {
+      background: var(--primary-color-a);
+      border-color: var(--primary-color-b);
+    }
+
+    .admin-assign-btn:hover:not(:disabled) {
+      background: var(--primary-color-b);
+      border-color: var(--primary-color-a);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .admin-publish-btn:disabled,
+    .admin-reject-btn:disabled,
+    .admin-assign-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .admin-article-status {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      background: var(--primary-color-a);
+      color: white;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+
+    .admin-article-status-deactivated {
+      font-size: 0.85rem;
+      color: var(--text-color-a);
+      opacity: 0.75;
+      padding: 0.75rem;
+      background: var(--background-color);
+      border-radius: 0.5rem;
+      border-left: 3px solid #dc2626;
+    }
+
+    .admin-pagination {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .admin-pagination-btn {
+      padding: 0.35rem 0.65rem;
+      border: 1px solid var(--primary-color-b);
+      border-radius: 0.375rem;
+      background: var(--background-color);
+      color: var(--text-color-a);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      font-size: 0.85rem;
+    }
+
+    .admin-pagination-btn:hover {
+      background: var(--text-color-b);
+      border-color: var(--primary-color-a);
+    }
+
+    .admin-pagination-btn.active {
+      background: var(--primary-color-a);
+      color: white;
+      border-color: var(--primary-color-a);
+    }
+
+    .admin-loading {
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--text-color-a);
+    }
+
+    .admin-empty-state {
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--text-color-a);
+      opacity: 0.7;
+    }
+
+    .admin-error {
+      padding: 1.5rem;
+      color: #dc2626;
+      font-weight: 500;
+    }
+  `;
+
+  document.head.appendChild(style);
+  __adminArticlesStylesInjected = true;
+}
+
 /** Fetch paginated admin articles with optional filters */
 async function fetchAdminArticles({ page = 1, perPage = 10, status = null, search = "" } = {}) {
   const token = getToken();
@@ -41,13 +356,10 @@ async function submitAdminDecision(articleId, status) {
 /** Create a list item for admin articles */
 function createArticleListItem(article, onClick) {
   const item = document.createElement("div");
-  item.className = `
-    cursor-pointer px-4 py-2 border-b border-gray-200 dark:border-gray-700
-    hover:bg-gray-100 dark:hover:bg-gray-800 transition
-  `;
+  item.className = "admin-article-item";
   item.innerHTML = `
-    <div class="font-medium text-gray-800 dark:text-gray-100">${article.title}</div>
-    <div class="text-xs text-gray-500 dark:text-gray-400">
+    <div class="admin-article-item-title">${article.title}</div>
+    <div class="admin-article-item-meta">
       ${article.authors.map(a => a.name).join(", ")} • Status: ${article.status || "N/A"}
     </div>
   `;
@@ -58,37 +370,50 @@ function createArticleListItem(article, onClick) {
 /** Render the article details in sidebar */
 function renderArticleSidebar(container, article) {
   const reviewersHTML = article.reviewers.length
-    ? `<ul class="list-disc pl-5 text-sm text-gray-700 dark:text-gray-300">
+    ? `<ul class="admin-reviewer-list">
         ${article.reviewers.map(r => `
-          <li>
-            <i class="fa-solid fa-user-check mr-1 text-blue-500"></i>
+          <li class="admin-reviewer-item">
+            <i class="fa-solid fa-user-check" style="color: var(--primary-color-a);"></i>
             ${r.name} (${r.email})
           </li>
         `).join("")}
       </ul>`
-    : `<p class="text-sm text-gray-500 dark:text-gray-400">No reviewers assigned.</p>`;
+    : `<p class="admin-empty-state">No reviewers assigned.</p>`;
 
   container.innerHTML = `
-    <div class="p-4 flex flex-col gap-3 w-full">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">${article.title}</h2>
-      <p class="text-gray-700 dark:text-gray-300">${article.abstract}</p>
-      ${article.filename ? `<p class="text-sm text-gray-500 dark:text-gray-400">
-        File: <a href="/uploads/${article.filename}" download class="underline">${article.filename}</a>
-      </p>` : ""}
-      <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-        Authors: ${article.authors.map(a => a.name).join(", ")}
+    <div class="admin-article-sidebar-content">
+      <h2 class="admin-article-sidebar-title">${article.title}</h2>
+
+      <div class="admin-article-abstract">${article.abstract}</div>
+
+      ${article.filename ? `<div class="admin-article-section">
+        <strong>File:</strong> <a href="/uploads/${article.filename}" download class="admin-article-file-link"><i class="fa-solid fa-download"></i> ${article.filename}</a>
+      </div>` : ""}
+
+      <div class="admin-article-section">
+        <div class="admin-article-meta-row">
+          <strong>Authors:</strong> ${article.authors.map(a => a.name).join(", ")}
+        </div>
       </div>
-      <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-        Keywords: ${article.keywords?.join(", ") || "N/A"}
+
+      <div class="admin-article-section">
+        <div class="admin-article-meta-row">
+          <strong>Keywords:</strong> ${article.keywords?.join(", ") || "N/A"}
+        </div>
       </div>
-      <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-        Status: <span class="admin-article-status font-medium">${article.status || "N/A"}</span>
+
+      <div class="admin-article-section">
+        <div class="admin-article-meta-row">
+          <strong>Status:</strong> <span class="admin-article-status">${article.status || "N/A"}</span>
+        </div>
       </div>
-      <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-        <strong>Assigned Reviewers:</strong>
+
+      <div class="admin-article-section">
+        <h3>Assigned Reviewers</h3>
         ${reviewersHTML}
       </div>
-      <div id="adminActionButtons" class="mt-4 flex gap-2"></div>
+
+      <div id="adminActionButtons" class="admin-action-buttons"></div>
     </div>
   `;
 
@@ -100,8 +425,8 @@ function renderArticleSidebar(container, article) {
   // Assign reviewers button (optional)
   if (article.id) {
     const assignBtn = document.createElement("button");
-    assignBtn.textContent = "Assign Reviewers";
-    assignBtn.className = "mt-3 px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600";
+    assignBtn.innerHTML = `<i class="fa-solid fa-user-plus"></i> Assign Reviewers`;
+    assignBtn.className = "admin-assign-btn";
     assignBtn.addEventListener("click", async () => {
       try {
         const module = await import("./admin_assign_reviewers.js");
@@ -110,33 +435,28 @@ function renderArticleSidebar(container, article) {
         console.error("Failed to load assign reviewers module:", err);
       }
     });
-    container.appendChild(assignBtn);
+    container.querySelector("#adminActionButtons").appendChild(assignBtn);
   }
 }
-
 
 /** Add admin decision buttons to sidebar */
 function renderAdminDecisionButtons(container, article) {
   const btnContainer = container.querySelector("#adminActionButtons");
-  btnContainer.innerHTML = "";
+  if (!btnContainer) return;
 
   const publishBtn = document.createElement("button");
-  publishBtn.innerHTML = `<i class="fa-solid fa-upload mr-2"></i>Publish`;
-  publishBtn.className = "px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-2";
+  publishBtn.innerHTML = `<i class="fa-solid fa-upload"></i> Publish`;
+  publishBtn.className = "admin-publish-btn";
 
   const rejectBtn = document.createElement("button");
-  rejectBtn.innerHTML = `<i class="fa-solid fa-ban mr-2"></i>Reject (admin)`;
-  rejectBtn.className = "px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded flex items-center gap-2";
+  rejectBtn.innerHTML = `<i class="fa-solid fa-ban"></i> Reject`;
+  rejectBtn.className = "admin-reject-btn";
 
   const statusEl = container.querySelector(".admin-article-status");
 
   const setUiPending = (isPending) => {
     publishBtn.disabled = isPending;
     rejectBtn.disabled = isPending;
-    [publishBtn, rejectBtn].forEach(b => {
-      if (isPending) b.classList.add("opacity-60", "cursor-not-allowed");
-      else b.classList.remove("opacity-60", "cursor-not-allowed");
-    });
   };
 
   publishBtn.addEventListener("click", async () => {
@@ -179,10 +499,12 @@ function renderAdminDecisionButtons(container, article) {
 
 /** Render admin articles list + sidebar */
 export async function renderAdminArticles({ page = 1, perPage = 10, filters = {} } = {}) {
+  ensureAdminArticleStyles();
+
   const container = createContentContainer({
     title: "All Articles",
     icon: "fa-solid fa-newspaper",
-    extraClasses: "rounded-xl shadow-md bg-white dark:bg-gray-900 w-full",
+    extraClasses: "",
     margin: "2rem auto"
   });
 
@@ -190,12 +512,12 @@ export async function renderAdminArticles({ page = 1, perPage = 10, filters = {}
   if (!wrapper) {
     wrapper = document.createElement("div");
     wrapper.id = "adminArticleWrapper";
-    wrapper.className = "flex flex-row gap-4 w-full min-h-[60vh]";
+    wrapper.className = "admin-article-wrapper";
     wrapper.innerHTML = `
-      <div class="flex flex-col flex-1">
-        <div class="flex gap-2 mb-2">
-          <input id="adminSearch" type="text" placeholder="Search..." class="flex-1 px-2 py-1 border rounded">
-          <select id="adminStatusFilter" class="px-2 py-1 border rounded">
+      <div class="admin-article-controls" style="flex: 1;">
+        <div class="admin-article-filters">
+          <input id="adminSearch" type="text" placeholder="Search..." class="admin-search-input" style="flex: 1;">
+          <select id="adminStatusFilter" class="admin-status-filter">
             <option value="">All Statuses</option>
             <option value="1">Submitted</option>
             <option value="2">Under Review</option>
@@ -204,12 +526,12 @@ export async function renderAdminArticles({ page = 1, perPage = 10, filters = {}
             <option value="5">Rejected</option>
             <option value="6">Published</option>
           </select>
-          <button id="adminFilterBtn" class="px-3 py-1 bg-blue-500 text-white rounded">Filter</button>
+          <button id="adminFilterBtn" class="admin-filter-btn"><i class="fa-solid fa-filter"></i> Filter</button>
         </div>
-        <div id="adminArticleList" class="flex-1 overflow-y-auto border-r border-gray-200 dark:border-gray-700"></div>
-        <div id="adminPagination" class="flex justify-center gap-2 mt-2"></div>
+        <div id="adminArticleList" class="admin-article-list"></div>
+        <div id="adminPagination" class="admin-pagination"></div>
       </div>
-      <div id="adminArticleSidebar" class="w-2/5 max-h-[60vh] overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 rounded-xl"></div>
+      <div id="adminArticleSidebar" class="admin-article-sidebar"></div>
     `;
     container.appendChild(wrapper);
   }
@@ -225,8 +547,8 @@ export async function renderAdminArticles({ page = 1, perPage = 10, filters = {}
 
   async function loadArticles(page = 1) {
     currentPage = page;
-    listEl.innerHTML = `<div class="py-6 text-center text-gray-500 dark:text-gray-400">
-      <i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading articles...
+    listEl.innerHTML = `<div class="admin-loading">
+      <i class="fa-solid fa-spinner fa-spin"></i> Loading articles...
     </div>`;
 
     try {
@@ -240,7 +562,7 @@ export async function renderAdminArticles({ page = 1, perPage = 10, filters = {}
       const articles = data.data ?? [];
 
       if (!articles.length) {
-        listEl.innerHTML = `<p class="py-6 text-center text-gray-500 dark:text-gray-400">No articles found.</p>`;
+        listEl.innerHTML = `<div class="admin-empty-state">No articles found.</div>`;
         sidebarEl.innerHTML = "";
         paginationEl.innerHTML = "";
         return;
@@ -259,13 +581,13 @@ export async function renderAdminArticles({ page = 1, perPage = 10, filters = {}
       for (let i = 1; i <= data.last_page; i++) {
         const btn = document.createElement("button");
         btn.textContent = i;
-        btn.className = `px-2 py-1 border rounded ${i === data.current_page ? "bg-blue-500 text-white" : ""}`;
+        btn.className = `admin-pagination-btn ${i === data.current_page ? "active" : ""}`;
         btn.addEventListener("click", () => loadArticles(i));
         paginationEl.appendChild(btn);
       }
 
     } catch (err) {
-      listEl.innerHTML = `<div class="py-6 text-red-600 dark:text-red-400">Failed to load articles: ${err.message}</div>`;
+      listEl.innerHTML = `<div class="admin-error"><i class="fa-solid fa-exclamation-circle"></i> Failed to load articles: ${err.message}</div>`;
       console.error(err);
     }
   }

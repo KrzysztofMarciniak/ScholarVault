@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Article extends Model
@@ -39,6 +40,12 @@ class Article extends Model
     public function authors()
     {
         return $this->belongsToMany(User::class, "article_user");
+    }
+
+    public function externalCitations(): BelongsToMany
+    {
+        return $this->belongsToMany(Citation::class, "article_citation_pivot")
+            ->withTimestamps();
     }
 
     // Articles this article cites

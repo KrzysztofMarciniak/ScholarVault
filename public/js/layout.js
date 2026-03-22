@@ -14,6 +14,68 @@
  * @param {string|null} [options.icon=null] - Font Awesome class(s), e.g. "fa-solid fa-tachometer-alt"
  * @returns {HTMLElement}
  */
+
+let __contentStylesInjected = false;
+
+function ensureContentStyles() {
+  if (__contentStylesInjected) return;
+
+  const style = document.createElement("style");
+  style.id = "content-container-theme";
+
+  style.textContent = `
+    .content-container {
+      width: 100%;
+      max-width: 72rem;
+      min-height: 200px;
+
+      margin-left: auto;
+      margin-right: auto;
+
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+
+
+     background-color: var(--background-color);
+     color: var(--text-color-a);
+
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .content-container.padded {
+      padding: 1.5rem;
+    }
+
+    .content-container.no-padding {
+      padding: 0;
+    }
+
+    .content-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      font-size: 1.125rem;
+      font-weight: 600;
+
+      user-select: none;
+      color: var(--text-color-a);
+    }
+
+    .content-header i {
+      color: var(--primary-color-a);
+      font-size: 1.1rem;
+    }
+  `;
+
+  document.head.appendChild(style);
+  __contentStylesInjected = true;
+}
+
 export function createContentContainer({
   appSelector = "#app",
   id = "content",
@@ -25,6 +87,8 @@ export function createContentContainer({
   title = null,
   icon = null,
 } = {}) {
+  ensureContentStyles();
+
   const app = document.querySelector(appSelector);
   if (!app) throw new Error(`App container not found for selector: ${appSelector}`);
 
@@ -41,25 +105,11 @@ export function createContentContainer({
   }
 
   const baseClasses = [
-    "w-full",
-    "mx-auto",
-    "max-w-6xl",
-    "min-h-[200px]",
-    "rounded-2xl",
-    "shadow-lg",
-    "flex",
-    "flex-col",
-    "gap-4",
-    "transition",
-    "duration-200",
-    "bg-white",
-    "dark:bg-slate-800",
-    "text-slate-900",
-    "dark:text-slate-100",
+    "content-container",
   ];
 
-  if (padded) baseClasses.push("p-6");
-  else baseClasses.push("p-0");
+  if (padded) baseClasses.push("padded");
+  else baseClasses.push("no-padding");
 
   const all = new Set([...baseClasses, ...extraClasses.split(/\s+/).filter(Boolean)]);
   content.className = Array.from(all).join(" ");
@@ -75,7 +125,7 @@ export function createContentContainer({
     const header = existingHeader || document.createElement("header");
     header.setAttribute("data-content-header", "");
     header.setAttribute("role", "banner");
-    header.className = "flex items-center gap-3 text-lg font-semibold select-none";
+    header.className = "content-header";
 
     if (icon) {
       let iconEl = header.querySelector("i[data-fa-icon]");

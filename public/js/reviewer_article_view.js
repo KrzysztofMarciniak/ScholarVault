@@ -2,6 +2,290 @@
 import { getToken } from "./get_token.js";
 import { createContentContainer } from "./layout.js";
 
+let __showArticleStylesInjected = false;
+
+function ensureShowArticleStyles() {
+  if (__showArticleStylesInjected) return;
+
+  const style = document.createElement("style");
+  style.id = "show-article-theme";
+
+  style.textContent = `
+    .show-article-container {
+      max-width: 56rem;
+      margin: 2rem auto;
+      padding: 1.5rem;
+    }
+
+    .article-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .article-section-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-color-a);
+      margin-bottom: 0.75rem;
+    }
+
+    .article-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-color-a);
+      margin-bottom: 0.5rem;
+    }
+
+    .article-status-row {
+      font-size: 0.85rem;
+      color: var(--text-color-a);
+      opacity: 0.85;
+    }
+
+    .article-status {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      background: var(--primary-color-a);
+      color: white;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+
+    .article-abstract {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--text-color-a);
+    }
+
+    .article-authors-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .article-author-item {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--text-color-b);
+      background: transparent;
+      transition: all 0.2s ease;
+    }
+
+    .article-author-item:last-child {
+      border-bottom: none;
+    }
+
+    .article-author-item:hover {
+      background: var(--text-color-b);
+      border-radius: 0.375rem;
+    }
+
+    .article-author-name {
+      font-weight: 600;
+      color: var(--text-color-a);
+      margin-bottom: 0.25rem;
+    }
+
+    .article-author-meta {
+      font-size: 0.8rem;
+      color: var(--text-color-a);
+      opacity: 0.75;
+      line-height: 1.4;
+    }
+
+    .article-citations-list {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+
+    .article-citation-item {
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-color-a);
+      line-height: 1.5;
+    }
+
+    .article-citation-doi {
+      font-size: 0.75rem;
+      color: var(--text-color-a);
+      opacity: 0.7;
+      display: inline-block;
+      margin-left: 0.5rem;
+    }
+
+    .comments-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .comment-item {
+      border: 1px solid var(--primary-color-b);
+      border-radius: 0.375rem;
+      padding: 1rem;
+      background: var(--text-color-b);
+      transition: all 0.2s ease;
+    }
+
+    .comment-item:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-color: var(--primary-color-a);
+    }
+
+    .comment-meta {
+      font-size: 0.75rem;
+      color: var(--text-color-a);
+      opacity: 0.7;
+      margin-bottom: 0.5rem;
+    }
+
+    .comment-text {
+      font-size: 0.9rem;
+      color: var(--text-color-a);
+      line-height: 1.5;
+    }
+
+    .comment-empty {
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--text-color-a);
+      opacity: 0.7;
+    }
+
+    .comment-form {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .comment-textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--primary-color-b);
+      border-radius: 0.375rem;
+      background: var(--background-color);
+      color: var(--text-color-a);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.2s ease;
+      resize: vertical;
+    }
+
+    .comment-textarea:focus {
+      border-color: var(--primary-color-a);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+    }
+
+    .comment-submit {
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--primary-color-b);
+      border-radius: 0.375rem;
+      background: var(--primary-color-a);
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .comment-submit:hover:not(:disabled) {
+      background: var(--primary-color-b);
+      border-color: var(--primary-color-a);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .comment-submit:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .comment-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .comment-error {
+      color: #dc2626;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .decision-panel {
+      margin-top: 2rem;
+      margin-bottom: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 2px solid var(--primary-color-b);
+      display: flex;
+      gap: 1rem;
+    }
+
+    .decision-accept-btn,
+    .decision-reject-btn {
+      flex: 1;
+      padding: 0.75rem 1.5rem;
+      border: 1px solid transparent;
+      border-radius: 0.375rem;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .decision-accept-btn {
+      background: #16a34a;
+      border-color: #15803d;
+    }
+
+    .decision-accept-btn:hover:not(:disabled) {
+      background: #15803d;
+      border-color: #16a34a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+    }
+
+    .decision-reject-btn {
+      background: #dc2626;
+      border-color: #991b1b;
+    }
+
+    .decision-reject-btn:hover:not(:disabled) {
+      background: #991b1b;
+      border-color: #dc2626;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    }
+
+    .decision-accept-btn:disabled,
+    .decision-reject-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .article-empty-state {
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--text-color-a);
+      opacity: 0.7;
+    }
+
+    .article-error {
+      padding: 1.5rem;
+      color: #dc2626;
+      font-weight: 500;
+    }
+  `;
+
+  document.head.appendChild(style);
+  __showArticleStylesInjected = true;
+}
+
 /** Fetch a single assigned article */
 async function fetchArticle(id) {
   const token = getToken();
@@ -22,15 +306,17 @@ async function fetchArticle(id) {
 
 /** Render authors list */
 function renderAuthors(authors) {
-  if (!authors?.length) return `<p class="text-gray-500">No authors.</p>`;
+  if (!authors?.length) return `<div class="article-empty-state">No authors.</div>`;
 
   return `
-    <ul class="space-y-2">
+    <ul class="article-authors-list">
       ${authors.map(a => `
-        <li class="border-b pb-1">
-          <strong>${a.name}</strong>
-          ${a.affiliation ? `<div class="text-sm text-gray-500">${a.affiliation}</div>` : ""}
-          ${a.orcid ? `<div class="text-xs text-gray-400">ORCID: ${a.orcid}</div>` : ""}
+        <li class="article-author-item">
+          <div class="article-author-name"><i class="fa-solid fa-user" style="margin-right: 0.5rem;"></i>${a.name}</div>
+          <div class="article-author-meta">
+            ${a.affiliation ? `<div>Affiliation: ${a.affiliation}</div>` : ""}
+            ${a.orcid ? `<div>ORCID: ${a.orcid}</div>` : ""}
+          </div>
         </li>
       `).join("")}
     </ul>
@@ -39,14 +325,14 @@ function renderAuthors(authors) {
 
 /** Render citations list */
 function renderCitations(list) {
-  if (!list?.length) return `<p class="text-gray-500">None.</p>`;
+  if (!list?.length) return `<div class="article-empty-state">None.</div>`;
 
   return `
-    <ul class="list-disc ml-5 space-y-1">
+    <ul class="article-citations-list">
       ${list.map(c => `
-        <li>
+        <li class="article-citation-item">
           ${c.title}
-          ${c.doi ? `<span class="text-xs text-gray-400">(DOI: ${c.doi})</span>` : ""}
+          ${c.doi ? `<span class="article-citation-doi">(DOI: ${c.doi})</span>` : ""}
         </li>
       `).join("")}
     </ul>
@@ -55,14 +341,16 @@ function renderCitations(list) {
 
 /** Render existing comments */
 function renderComments(comments) {
+  if (!comments?.length) return `<div class="article-empty-state">No comments yet.</div>`;
+
   return `
-    <div class="space-y-3">
+    <div class="comments-container">
       ${comments.map(c => `
-        <div class="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
-          <div class="text-xs text-gray-500 mb-1">
-            ${c.user?.name ?? "Unknown"} • ${new Date(c.created_at).toLocaleString()}
+        <div class="comment-item">
+          <div class="comment-meta">
+            <i class="fa-solid fa-user-circle"></i> ${c.user?.name ?? "Unknown"} • ${new Date(c.created_at).toLocaleString()}
           </div>
-          <div class="text-sm">${c.comment}</div>
+          <div class="comment-text">${c.comment}</div>
         </div>
       `).join("")}
     </div>
@@ -93,24 +381,22 @@ async function submitComment(articleId, comment) {
 /** Render comment form below comments */
 function renderCommentForm(container, articleId, commentsContainer) {
   const form = document.createElement("form");
-  form.className = "mt-6 space-y-2";
+  form.className = "comment-form";
 
   const textarea = document.createElement("textarea");
   textarea.name = "comment";
   textarea.placeholder = "Leave a comment...";
   textarea.required = true;
-  textarea.rows = 3;
-  textarea.className =
-    "w-full p-2 border rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500";
+  textarea.rows = 4;
+  textarea.className = "comment-textarea";
 
   const submit = document.createElement("button");
   submit.type = "submit";
-  submit.textContent = "Submit Comment";
-  submit.className =
-    "px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition";
+  submit.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Submit Comment`;
+  submit.className = "comment-submit";
 
   const errorBox = document.createElement("small");
-  errorBox.className = "block text-red-600 dark:text-red-400 mt-1";
+  errorBox.className = "comment-error";
 
   form.appendChild(textarea);
   form.appendChild(submit);
@@ -136,12 +422,12 @@ function renderCommentForm(container, articleId, commentsContainer) {
       // Append new comment to comments container
       if (commentsContainer) {
         const div = document.createElement("div");
-        div.className = "border rounded-lg p-3 bg-gray-50 dark:bg-gray-800";
+        div.className = "comment-item";
         div.innerHTML = `
-          <div class="text-xs text-gray-500 mb-1">
-            ${created.user?.name ?? "Unknown"} • ${new Date(created.created_at).toLocaleString()}
+          <div class="comment-meta">
+            <i class="fa-solid fa-user-circle"></i> ${created.user?.name ?? "Unknown"} • ${new Date(created.created_at).toLocaleString()}
           </div>
-          <div class="text-sm">${created.comment}</div>
+          <div class="comment-text">${created.comment}</div>
         `;
         commentsContainer.appendChild(div);
       }
@@ -157,72 +443,71 @@ function renderCommentForm(container, articleId, commentsContainer) {
 
 /** Show article with full info + comments + form */
 export async function showArticle(id) {
+  ensureShowArticleStyles();
 
   const content = createContentContainer({
     padded: true,
     margin: "2rem auto",
-    border: "1px solid #ccc",
-    extraClasses: "rounded-xl shadow-md bg-white dark:bg-gray-900 max-w-4xl",
+    border: "2px solid var(--primary-color-b)",
+    extraClasses: "show-article-container",
     title: "Review Article",
+    icon: "fa-solid fa-file-lines",
   });
 
-  content.innerHTML += `<p class="text-gray-500">Loading article...</p>`;
+  content.innerHTML += `<p style="color: var(--text-color-a); text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Loading article...</p>`;
 
   try {
 
     const article = await fetchArticle(id);
 
-    // render everything; mark status with a span.article-status so we can update it
+    // render everything
     content.innerHTML = `
-
-      <section class="space-y-6">
-
-        <div>
-          <h2 class="text-xl font-semibold">${article.title}</h2>
-          <div class="text-sm text-gray-500">Status: <span class="article-status">${article.status ?? ""}</span></div>
+      <section class="article-section">
+        <h2 class="article-title">${article.title}</h2>
+        <div class="article-status-row">
+          Status: <span class="article-status">${article.status ?? ""}</span>
         </div>
+      </section>
 
-        <div>
-          <h3 class="font-semibold mb-2">Abstract</h3>
-          <p class="text-sm leading-relaxed">${article.abstract ?? ""}</p>
+      <section class="article-section">
+        <h3 class="article-section-title">Abstract</h3>
+        <p class="article-abstract">${article.abstract ?? ""}</p>
+      </section>
+
+      <section class="article-section">
+        <h3 class="article-section-title">Authors</h3>
+        ${renderAuthors(article.authors)}
+      </section>
+
+      <section class="article-section">
+        <h3 class="article-section-title">Citations</h3>
+        ${renderCitations(article.citations)}
+      </section>
+
+      <section class="article-section">
+        <h3 class="article-section-title">Cited By</h3>
+        ${renderCitations(article.cited_by)}
+      </section>
+
+      <section class="article-section">
+        <h3 class="article-section-title">Reviewer Comments</h3>
+        <div id="commentsContainer">
+          ${renderComments(article.comments)}
         </div>
-
-        <div>
-          <h3 class="font-semibold mb-2">Authors</h3>
-          ${renderAuthors(article.authors)}
-        </div>
-
-        <div>
-          <h3 class="font-semibold mb-2">Citations</h3>
-          ${renderCitations(article.citations)}
-        </div>
-
-        <div>
-          <h3 class="font-semibold mb-2">Cited By</h3>
-          ${renderCitations(article.cited_by)}
-        </div>
-
-        <div>
-          <h3 class="font-semibold mb-2">Reviewer Comments</h3>
-          <div id="commentsContainer">
-            ${renderComments(article.comments)}
-          </div>
-        </div>
-
       </section>
     `;
 
     const commentsContainer = content.querySelector("#commentsContainer");
     renderCommentForm(content, id, commentsContainer);
 
-    // pass the current status to the decision panel so it can render read-only when appropriate
+    // pass the current status to the decision panel
     renderDecisionPanel(content, id, article.status);
 
   } catch (err) {
 
     content.innerHTML = `
-      <div class="text-red-500">
-        Failed to load article: ${err.message}
+      <div class="article-error">
+        <i class="fa-solid fa-exclamation-circle"></i> Failed to load article: ${err.message}
       </div>
     `;
 
@@ -254,15 +539,17 @@ async function submitDecision(articleId, decision) {
 /** Render decision buttons for reviewer */
 function renderDecisionPanel(container, articleId, currentStatus) {
   const panel = document.createElement("div");
-  panel.className = "mt-6 flex gap-4";
+  panel.className = "decision-panel";
 
   const acceptBtn = document.createElement("button");
-  acceptBtn.textContent = "Accept";
-  acceptBtn.className = "px-4 py-2 bg-green-600 text-white rounded-md";
+  acceptBtn.innerHTML = `<i class="fa-solid fa-check"></i> Accept`;
+  acceptBtn.className = "decision-accept-btn";
+  acceptBtn.type = "button";
 
   const rejectBtn = document.createElement("button");
-  rejectBtn.textContent = "Reject";
-  rejectBtn.className = "px-4 py-2 bg-red-600 text-white rounded-md";
+  rejectBtn.innerHTML = `<i class="fa-solid fa-xmark"></i> Reject`;
+  rejectBtn.className = "decision-reject-btn";
+  rejectBtn.type = "button";
 
   // find status element to update after change
   const statusEl = container.querySelector(".article-status");
@@ -272,19 +559,13 @@ function renderDecisionPanel(container, articleId, currentStatus) {
   if (readonly) {
     acceptBtn.disabled = true;
     rejectBtn.disabled = true;
-    acceptBtn.classList.add("opacity-50", "cursor-not-allowed");
-    rejectBtn.classList.add("opacity-50", "cursor-not-allowed");
   } else {
     acceptBtn.addEventListener("click", async () => {
       acceptBtn.disabled = true;
       rejectBtn.disabled = true;
-      acceptBtn.classList.add("opacity-50", "cursor-not-allowed");
-      rejectBtn.classList.add("opacity-50", "cursor-not-allowed");
       try {
-        const res = await submitDecision(articleId, "accepted");
-        // update UI status
+        await submitDecision(articleId, "accepted");
         if (statusEl) statusEl.textContent = "accepted";
-        // final read-only state
         acceptBtn.disabled = true;
         rejectBtn.disabled = true;
       } catch (err) {
@@ -292,18 +573,14 @@ function renderDecisionPanel(container, articleId, currentStatus) {
         alert(err.message || "Failed to submit decision");
         acceptBtn.disabled = false;
         rejectBtn.disabled = false;
-        acceptBtn.classList.remove("opacity-50", "cursor-not-allowed");
-        rejectBtn.classList.remove("opacity-50", "cursor-not-allowed");
       }
     });
 
     rejectBtn.addEventListener("click", async () => {
       acceptBtn.disabled = true;
       rejectBtn.disabled = true;
-      acceptBtn.classList.add("opacity-50", "cursor-not-allowed");
-      rejectBtn.classList.add("opacity-50", "cursor-not-allowed");
       try {
-        const res = await submitDecision(articleId, "rejected");
+        await submitDecision(articleId, "rejected");
         if (statusEl) statusEl.textContent = "rejected";
         acceptBtn.disabled = true;
         rejectBtn.disabled = true;
@@ -312,8 +589,6 @@ function renderDecisionPanel(container, articleId, currentStatus) {
         alert(err.message || "Failed to submit decision");
         acceptBtn.disabled = false;
         rejectBtn.disabled = false;
-        acceptBtn.classList.remove("opacity-50", "cursor-not-allowed");
-        rejectBtn.classList.remove("opacity-50", "cursor-not-allowed");
       }
     });
   }
