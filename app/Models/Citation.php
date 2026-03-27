@@ -85,12 +85,14 @@ class Citation extends Model
     {
         return $query->where("availability_status", "doi_only");
     }
+
     public function delete(): bool
     {
         return parent::delete();
     }
+
     public function article()
     {
-        return $this->belongsTo(\App\Models\Article::class);
+        return $this->belongsTo(Article::class);
     }
 }

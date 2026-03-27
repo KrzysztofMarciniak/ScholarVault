@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Services\ApiDocsService\ApiDocs;
+use App\Services\ApiDocsService\EndpointDTO;
 use App\Enums\ArticleStatus;
 use App\Models\Article;
 use App\Services\Article\AnyArticleService;
@@ -12,128 +14,54 @@ use Illuminate\Http\Request;
 
 class v1ArticleController extends Controller
 {
-    public function help(ApiDocsService $apiDocs): JsonResponse
-    {
-        $apiDocs->addEndpoints([
-            [
-                "method" => "GET",
-                "path" => "/api/v1/articles/{id}",
-                "description" => "Retrieve detailed information about a specific published article",
-                "auth_required" => false,
-                "path_params" => [
-                    "id" => "integer|required|article id",
-                ],
-                "response_code" => 200,
-                "response_data" => [
-                    "id" => "integer",
-                    "title" => "string",
-                    "abstract" => "string",
-                    "doi" => "string|null",
-                    "keywords" => "array",
-                    "file_type" => "string",
-                    "filename" => "string",
-                    "status" => [
-                        "id" => "integer",
-                        "name" => "string",
-                    ],
-                    "created_at" => "datetime",
-                    "updated_at" => "datetime",
-                    "authors" => [
-                        [
-                            "id" => "integer",
-                            "name" => "string",
-                            "orcid" => "string|null",
-                            "is_primary" => "boolean",
-                        ],
-                    ],
-                    "reviewers" => [
-                        [
-                            "id" => "integer",
-                            "name" => "string",
-                            "orcid" => "string|null",
-                        ],
-                    ],
-                    "citations" => [
-                        [
-                            "id" => "integer",
-                            "title" => "string",
-                            "doi" => "string|null",
-                        ],
-                    ],
-                    "cited_by" => [
-                        [
-                            "id" => "integer",
-                            "title" => "string",
-                            "doi" => "string|null",
-                        ],
-                    ],
-                    "citations_count" => "integer",
-                    "cited_by_count" => "integer",
-                ],
-                "available" => true,
-                "roles" => [],
-                "request_body" => [],
-                "query_params" => [],
-            ],
-            [
-                "method" => "GET",
-                "path" => "/api/v1/articles",
-                "description" => "Retrieve paginated list of published articles",
-                "auth_required" => false,
-                "query_params" => [
-                    "page" => "integer|optional|default:1",
-                    "per_page" => "integer|optional|max:25|default:15",
-                    "search" => "string|optional|search in title and abstract",
-                    "keyword" => "string|optional|filter by keyword",
-                    "author_id" => "integer|optional|filter by author",
-                    "sort" => "string|optional|values: newest, oldest",
-                ],
-                "response_code" => 200,
-                "response_data" => [
-                    "current_page" => "integer",
-                    "per_page" => "integer",
-                    "total" => "integer",
-                    "last_page" => "integer",
-                    "data" => [
-                        [
-                            "id" => "integer",
-                            "title" => "string",
-                            "abstract" => "string",
-                            "doi" => "string|null",
-                            "keywords" => "array",
-                            "file_type" => "string",
-                            "created_at" => "datetime",
-                            "authors" => [
-                                [
-                                    "id" => "integer",
-                                    "name" => "string",
-                                    "orcid" => "string|null",
-                                    "is_primary" => "boolean",
-                                ],
-                            ],
-                            "citations_count" => "integer",
-                        ],
-                    ],
-                ],
-                "available" => true,
-                "roles" => [],
-                "request_body" => [],
-                "query_params" => [
-                    "page" => "integer|optional|default:1",
-                    "per_page" => "integer|optional|max:25|default:15",
-                    "search" => "string|optional|search in title and abstract",
-                    "keyword" => "string|optional|filter by keyword",
-                    "author_id" => "integer|optional|filter by author",
-                    "sort" => "string|optional|values: newest, oldest",
-                ],
-            ],
-        ]);
+public function help(ApiDocs $docs): JsonResponse
+{
+    // List paginated articles
+    $docs->addEndpoint(new EndpointDTO(
+        method: "GET",
+        path: "/api/v1/articles",
+        description: "Retrieve a paginated list of published articles with optional filters",
+        roles: ["none"],
+        requestBody: [],
+        queryParams: [
+            "page" => "integer (default 1)",
+            "per_page" => "integer (max 25, default 15)",
+            "search" => "string (search by title or abstract)",
+            "keyword" => "string (filter by keyword)",
+            "author_id" => "integer (filter by author ID)",
+            "sort" => "string (sort order, e.g., created_at, title)",
+        ],
+        responseCode: 200,
+        available: true,
+        responseData: [
+            "current_page" => "integer",
+            "per_page" => "integer",
+            "total" => "integer",
+            "last_page" => "integer",
+            "data" => "array of article objects"
+        ]
+    ));
 
-        return response()->json([
+    // Retrieve a single article
+    $docs->addEndpoint(new EndpointDTO(
+        method: "GET",
+        path: "/api/v1/articles/{id}",
+        description: "Retrieve a single article by its ID",
+        roles: ["none"],
+        requestBody: [],
+        queryParams: [
+            "id" => "integer (ID of the article)"
+        ],
+        responseCode: 200,
+        available: true,
+        responseData: [
             "status" => "success",
-            "endpoints" => $apiDocs->getEndpoints(),
-        ]);
-    }
+            "data" => "article object"
+        ]
+    ));
+
+    return response()->json($docs->getEndpoints());
+}
 
     /**
      * List paginated articles.

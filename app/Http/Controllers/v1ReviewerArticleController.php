@@ -7,13 +7,95 @@ namespace App\Http\Controllers;
 use App\Enums\ArticleStatus;
 use App\Models\Article;
 use App\Models\ArticleComment;
-use App\Services\ApiDocsService;
+use App\Services\ApiDocsService\ApiDocs;
+use App\Services\ApiDocsService\EndpointDTO;
 use App\Services\Article\ReviewerArticleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class v1ReviewerArticleController extends v1Controller
 {
+public function help(ApiDocs $docs): JsonResponse
+{
+    // List articles assigned to the reviewer
+    $docs->addEndpoint(new EndpointDTO(
+        method: "GET",
+        path: "/api/v1/articles/assigned",
+        description: "List articles assigned to the authenticated reviewer.",
+        roles: ["reviewer"],
+        queryParams: [
+            "per_page" => "integer, optional, default 10"
+        ],
+        responseCode: 200,
+        responseData: "paginated array of articles with basic info"
+    ));
+
+    // View a single assigned article
+    $docs->addEndpoint(new EndpointDTO(
+        method: "GET",
+        path: "/api/v1/articles/assigned/{id}",
+        description: "View details of a single article assigned to the reviewer.",
+        roles: ["reviewer"],
+        queryParams: [
+            "id" => "integer, article ID"
+        ],
+        responseCode: 200,
+        responseData: "article object including latest file, authors, citations, and comments"
+    ));
+
+    // Leave a comment on an assigned article
+    $docs->addEndpoint(new EndpointDTO(
+        method: "POST",
+        path: "/api/v1/articles/assigned/comment/{id}",
+        description: "Add a comment on an assigned article.",
+        roles: ["reviewer"],
+        requestBody: [
+            "comment" => "string, required, max 5000 characters"
+        ],
+        responseCode: 201,
+        responseData: [
+            "id" => "comment ID",
+            "article_id" => "article ID",
+            "user_id" => "comment author ID",
+            "comment" => "comment text",
+            "created_at" => "timestamp"
+        ]
+    ));
+
+    // Submit a review for an assigned article
+    $docs->addEndpoint(new EndpointDTO(
+        method: "POST",
+        path: "/api/v1/articles/assigned/{id}/review",
+        description: "Submit a review for an assigned article.",
+        roles: ["reviewer"],
+        requestBody: [
+            "recommendation" => "string, required, one of accept, reject, revision_requested",
+            "comments" => "string, required, max 5000 characters"
+        ],
+        responseCode: 200,
+        responseData: "review object including reviewer info"
+    ));
+
+    // Make a decision on an assigned article
+    $docs->addEndpoint(new EndpointDTO(
+        method: "POST",
+        path: "/api/v1/articles/assigned/decide/{id}",
+        description: "Submit a final decision (accept/reject) on an assigned article.",
+        roles: ["reviewer"],
+        requestBody: [
+            "decision" => "string, required, either accepted or rejected"
+        ],
+        responseCode: 200,
+        responseData: [
+            "status" => "success",
+            "article_id" => "ID of the article",
+            "new_status" => "new status ID"
+        ]
+    ));
+
+    return response()->json($docs->getEndpoints());
+}
+
     public function assignedArticles(Request $request, ReviewerArticleService $service): JsonResponse
     {
         $user = $request->user();
@@ -134,147 +216,5 @@ class v1ReviewerArticleController extends v1Controller
         ]);
     }
 
-    public function help(ApiDocsService $apiDocs): JsonResponse
-    {
-        $apiDocs->addEndpoints([
-            [
-                "method" => "GET",
-                "path" => "/api/v1/admin/articles",
-                "description" => "List all articles with full details, including authors, citations, and articles that cite them. Paginated to 5 per page.",
-                "auth_required" => true,
-                "roles" => ["admin"],
-                "response_code" => 200,
-                "response_data" => [
-                    "current_page" => "integer",
-                    "per_page" => "integer",
-                    "total" => "integer",
-                    "data" => [
-                        [
-                            "id" => "integer",
-                            "title" => "string",
-                            "abstract" => "string",
-                            "filename" => "string",
-                            "file_type" => "string",
-                            "keywords" => "array",
-                            "status" => "string",
-                            "doi" => "string|null",
-                            "authors" => [
-                                [
-                                    "id" => "integer",
-                                    "name" => "string",
-                                    "email" => "string",
-                                    "role_id" => "integer",
-                                    "role_name" => "string",
-                                    "affiliation" => "string|null",
-                                    "bio" => "string|null",
-                                    "deactivated" => "boolean",
-                                    "orcid" => "string|null",
-                                    "is_primary" => "boolean",
-                                ],
-                            ],
-                            "citations" => [
-                                [
-                                    "id" => "integer",
-                                    "title" => "string",
-                                    "doi" => "string|null",
-                                ],
-                            ],
-                            "cited_by" => [
-                                [
-                                    "id" => "integer",
-                                    "title" => "string",
-                                    "doi" => "string|null",
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-                "available" => true,
-                "request_body" => [],
-                "query_params" => [],
-            ],
-            [
-                "method" => "PATCH",
-                "path" => "/api/v1/articles/admin/reviewers/{id}",
-                "description" => "Replace all reviewers assigned to an article (admin only). Existing reviewers are removed if not included in request.",
-                "auth_required" => true,
-                "roles" => ["admin"],
-                "request_body" => [
-                    "reviewers" => "array|required",
-                    "reviewers.*" => "integer|exists:users,id (must have reviewer role)",
-                ],
-                "behavior" => "sync (overwrite)",
-                "response_code" => 200,
-                "response_data" => "Updated Article resource with reviewers",
-                "available" => true,
-                "query_params" => [],
-            ],
-            [
-                "method" => "PATCH",
-                "path" => "/api/v1/articles/decision/{id}",
-                "description" => "Make final decision on an article",
-                "auth_required" => true,
-                "roles" => ["admin"],
-                "request_body" => [
-                    "status" => "string|required|in:accepted,rejected",
-                ],
-                "response_code" => 200,
-                "response_data" => "Article object",
-                "available" => true,
-                "query_params" => [],
-            ],
-            [
-                "method" => "GET",
-                "path" => "/api/v1/articles/admin/reviewers",
-                "description" => "List all reviewers (admin only). Paginated.",
-                "auth_required" => true,
-                "roles" => ["admin"],
-                "query_params" => [
-                    "page" => "integer",
-                    "per_page" => "integer",
-                    "search" => "string (optional)",
-                ],
-                "response_code" => 200,
-                "response_data" => [
-                    "current_page" => "integer",
-                    "per_page" => "integer",
-                    "total" => "integer",
-                    "data" => [
-                        [
-                            "id" => "integer",
-                            "name" => "string",
-                            "email" => "string",
-                            "affiliation" => "string|null",
-                            "orcid" => "string|null",
-                            "deactivated" => "boolean",
-                        ],
-                    ],
-                ],
-                "available" => true,
-                "request_body" => [],
-            ],
-            [
-                "method" => "POST",
-                "path" => "/api/v1/articles/assgined/comment/{id}",
-                "description" => "Leave a reviewer comment on an assigned article.",
-                "auth_required" => true,
-                "roles" => ["reviewer"],
-                "request_body" => [
-                    "comment" => "string|required|max:5000",
-                ],
-                "response_code" => 201,
-                "response_data" => [
-                    "id" => "integer",
-                    "article_id" => "integer",
-                    "user_id" => "integer",
-                    "comment" => "string",
-                    "created_at" => "timestamp",
-                ],
-                "available" => true,
-                "query_params" => [],
-            ],
-        ]);
 
-        return response()->json($apiDocs->getDocs());
-    }
 }

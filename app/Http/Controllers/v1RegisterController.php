@@ -4,20 +4,22 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Services\ApiDocsService;
+use App\Services\ApiDocsService\ApiDocs;
+use App\Services\ApiDocsService\EndpointDTO;
 use App\Services\RegistrationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class v1RegisterController extends Controller
+class v1RegisterController extends v1Controller
 {
-    public function help(ApiDocsService $docsService): JsonResponse
+    public function help(ApiDocs $docs): JsonResponse
     {
-        $docsService->addEndpoint([
-            "method" => "POST",
-            "path" => "/api/v1/register",
-            "description" => "Create a new user. Registration can only assign the AUTHOR role. Email is sanitized to lowercase; password is trimmed.",
-            "required_fields" => [
+        $docs->addEndpoint(new EndpointDTO(
+            method: "POST",
+            path: "/api/v1/register",
+            description: "Create a new user. Registration can only assign the AUTHOR role. Email is sanitized to lowercase; password is trimmed.",
+            roles: ["none"],
+            requestBody: [
                 "name" => "string, required",
                 "email" => "string, valid email",
                 "password" => "string, required",
@@ -25,17 +27,22 @@ class v1RegisterController extends Controller
                 "orcid" => "16-digit number, optional",
                 "bio" => "string, optional",
             ],
-            "example_request" => [
-                "name" => "John Doe",
-                "email" => "john@example.com",
-                "password" => "secret",
-                "affiliation" => "University X",
-                "orcid" => "0000123412341234",
-                "bio" => "Short bio here",
+            queryParams: [],
+            responseCode: 201,
+            available: true,
+            responseData: [
+                "example_request" => [
+                    "name" => "John Doe",
+                    "email" => "john@example.com",
+                    "password" => "secret",
+                    "affiliation" => "University X",
+                    "orcid" => "0000123412341234",
+                    "bio" => "Short bio here",
+                ],
             ],
-        ]);
+        ));
 
-        return response()->json($docsService->toJson());
+        return response()->json($docs->getEndpoints());
     }
 
     public function register(Request $request, RegistrationService $registration): JsonResponse

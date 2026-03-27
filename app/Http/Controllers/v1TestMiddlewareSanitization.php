@@ -4,37 +4,36 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Services\ApiDocsService;
+use App\Services\ApiDocsService\ApiDocs;
+use App\Services\ApiDocsService\EndpointDTO;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class v1TestMiddlewareSanitization extends v1Controller
 {
-    public function help(ApiDocsService $docs): JsonResponse
+    public function help(ApiDocs $docs): JsonResponse
     {
-        $docs->addEndpoints([
-            [
-                "method" => "POST",
-                "path" => "/api/v1/test/sanitization",
-                "description" => "Requires 'email' and 'password', returns sanitized request data.",
-                "roles" => ["public"],
-                "request_body" => [
+        $docs->addEndpoint(new EndpointDTO(
+            method: "POST",
+            path: "/api/v1/test/sanitization",
+            description: "Requires 'email' and 'password', returns sanitized request data.",
+            roles: ["public"],
+            requestBody: [
+                "email" => "string",
+                "password" => "string",
+            ],
+            queryParams: [],
+            responseCode: 200,
+            available: true,
+            responseData: [
+                "status" => "success",
+                "unsanitized" => "raw request body",
+                "sanitized" => [
                     "email" => "string",
                     "password" => "string",
                 ],
-                "query_params" => [],
-                "response_code" => 200,
-                "available" => true,
-                "response_data" => [
-                    "status" => "success",
-                    "unsanitized" => "raw request body",
-                    "sanitized" => [
-                        "email" => "string",
-                        "password" => "string",
-                    ],
-                ],
             ],
-        ]);
+        ));
 
         return response()->json($docs->getEndpoints(), 200);
     }

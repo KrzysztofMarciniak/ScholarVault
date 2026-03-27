@@ -23,6 +23,7 @@ Route::prefix("v1")->group(function (): void {
     // -----------------------
     // Notifications (auth)
     // -----------------------
+    Route::get("/notifications/help", [v1NotificationController::class, "help"]);
     // Routes for user notification checks and marking as read
     Route::prefix("notifications")->middleware("auth:sanctum")->group(function (): void {
         Route::get("/check", [v1NotificationController::class, "check"])
@@ -41,6 +42,12 @@ Route::prefix("v1")->group(function (): void {
         // Public help endpoint for articles resource
         Route::get("help", [v1ArticleController::class, "help"])
             ->name("v1.articles.help");                  // GET /api/v1/articles/help
+        Route::get("help/author", [v1AuthorArticleController::class, "help"])
+            ->name("v1.articles.author.help");                  // GET /api/v1/articles/help/author
+        Route::get("help/reviewer", [v1ReviewerArticleController::class, "help"])
+            ->name("v1.articles.reviewer.help");                  // GET /api/v1/articles/help/reviewer
+        Route::get("help/admin", [v1AdminArticleController::class, "help"])
+            ->name("v1.articles.admin.help");                  // GET /api/v1/articles/help/admin
 
         // ------------------------
         // AUTHOR: actions restricted to Role::AUTHOR
@@ -128,6 +135,9 @@ Route::prefix("v1")->group(function (): void {
     // Citations resource
     // -----------------------
     Route::prefix("citations")->group(function (): void {
+        Route::get("/help", [v1CitationController::class, "help"])
+            ->name("v1.citations.help");               // GET /api/v1/citations/help
+
         // List all citations (public)
         Route::get("/", [v1CitationController::class, "index"])
             ->name("v1.citations.index");               // GET /api/v1/citations/

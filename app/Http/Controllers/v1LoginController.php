@@ -4,53 +4,50 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Services\ApiDocsService;
+use App\Services\ApiDocsService\ApiDocs;
+use App\Services\ApiDocsService\EndpointDTO;
 use App\Services\AuthService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
 
-class v1LoginController extends Controller
+class v1LoginController extends v1Controller
 {
-    public function help(ApiDocsService $docs): JsonResponse
+    public function help(ApiDocs $docs): JsonResponse
     {
-        $docs->addEndpoints([
-            [
-                "method" => "POST",
-                "path" => "/api/v1/login",
-                "description" => "Authenticate user with email and password, returns API token. Password is trimmed, email is lowercase.",
-                "roles" => ["guest"],
-                "request_body" => [
-                    "email" => "string, valid email",
-                    "password" => "string, required",
-                ],
-                "query_params" => [],
-                "response_code" => 200,
-                "available" => true,
-                "response_data" => [
-                    "token" => "string",
-                ],
+        $docs->addEndpoint(new EndpointDTO(
+            method: "POST",
+            path: "/api/v1/login",
+            description: "Authenticate user with email and password, returns API token. Password is trimmed, email is lowercase.",
+            roles: ["none"],
+            requestBody: [
+                "email" => "string, valid email",
+                "password" => "string, required",
             ],
-            [
-                "method" => "POST",
-                "path" => "/api/v1/login/logout",
-                "description" => "Revoke current API token, logs user out",
-                "roles" => ["user"],
-                "request_body" => [],
-                "query_params" => [],
-                "response_code" => 200,
-                "available" => true,
-                "response_data" => [
-                    "message" => "Logged out successfully",
-                ],
+            queryParams: [],
+            responseCode: 200,
+            available: true,
+            responseData: [
+                "token" => "string",
             ],
-        ]);
+        ));
 
-        return response()->json([
-            "message" => "Login API usage instructions",
-            "endpoints" => $docs->getEndpoints(),
-        ]);
+        $docs->addEndpoint(new EndpointDTO(
+            method: "POST",
+            path: "/api/v1/login/logout",
+            description: "Revoke current API token, logs user out",
+            roles: ["user"],
+            requestBody: [],
+            queryParams: [],
+            responseCode: 200,
+            available: true,
+            responseData: [
+                "message" => "Logged out successfully",
+            ],
+        ));
+
+        return response()->json($docs->getEndpoints());
     }
 
     public function login(Request $request, AuthService $service): JsonResponse

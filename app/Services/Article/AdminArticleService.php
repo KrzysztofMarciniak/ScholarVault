@@ -14,6 +14,7 @@ use InvalidArgumentException;
 
 class AdminArticleService extends BaseArticleService
 {
+
     public function listArticles(int $perPage = 5, array $filters = []): LengthAwarePaginator
     {
         $query = Article::with([

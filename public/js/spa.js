@@ -11,9 +11,11 @@ import { renderDeleteSelf } from './self_delete.js';
 import { renderChangePassword } from './self_password.js';
 import { createContentContainer } from './layout.js';
 import { renderHome } from "./home.js";
+import { initApiInfoModal } from "./api_info.js";
 
 const app = document.getElementById("app");
 
+initApiInfoModal();
 initUserMenu();
 initNotificationsModal();
 initThemeSwitcher();
