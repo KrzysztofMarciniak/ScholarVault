@@ -47,18 +47,43 @@ export function renderForm({
     span.className = "form-label-text";
     label.appendChild(span);
 
-    const input = f.type === "textarea"
-      ? document.createElement("textarea")
-      : document.createElement("input");
+    let input;
 
-    if (f.type !== "textarea") input.type = f.type || "text";
+    if (f.type === "select") {
+      input = document.createElement("select");
+      input.name = f.name;
+      if (f.required) input.required = true;
+      input.setAttribute("aria-describedby", "formError");
+      input.setAttribute("aria-invalid", "false");
+      input.className = "form-input";
+      input.value = f.value || "";
 
-    input.name = f.name;
-    if (f.required) input.required = true;
-
-    input.setAttribute("aria-describedby", "formError");
-    input.setAttribute("aria-invalid", "false");
-    input.className = "form-input";
+      if (f.options && Array.isArray(f.options)) {
+        f.options.forEach(opt => {
+          const option = document.createElement("option");
+          option.value = opt.value;
+          option.textContent = opt.label;
+          input.appendChild(option);
+        });
+      }
+    } else if (f.type === "textarea") {
+      input = document.createElement("textarea");
+      input.name = f.name;
+      if (f.required) input.required = true;
+      input.setAttribute("aria-describedby", "formError");
+      input.setAttribute("aria-invalid", "false");
+      input.className = "form-input";
+      input.value = f.value || "";
+    } else {
+      input = document.createElement("input");
+      input.type = f.type || "text";
+      input.name = f.name;
+      if (f.required) input.required = true;
+      input.setAttribute("aria-describedby", "formError");
+      input.setAttribute("aria-invalid", "false");
+      input.className = "form-input";
+      input.value = f.value || "";
+    }
 
     label.appendChild(input);
     form.appendChild(label);
@@ -97,7 +122,7 @@ export function resetFormErrors(form, errorBox) {
   if (errorBox) errorBox.textContent = "";
 
   [...form.elements].forEach(el => {
-    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
       el.setAttribute("aria-invalid", "false");
       el.classList.remove("form-invalid");
     }
@@ -106,7 +131,7 @@ export function resetFormErrors(form, errorBox) {
 
 export function markInvalid(form) {
   [...form.elements].forEach(el => {
-    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
       el.setAttribute("aria-invalid", "true");
       el.classList.add("form-invalid");
     }

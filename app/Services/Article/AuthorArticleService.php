@@ -57,7 +57,7 @@ class AuthorArticleService extends BaseArticleService
     {
         return Article::authoredBy($authorId)
             ->with("status:id,name")
-            ->withCount(["citations", "citedBy"])
+            ->withCount(["citations"])
             ->paginate($perPage)
             ->through(fn(Article $article) => [
                 "id" => $article->id,
@@ -66,7 +66,7 @@ class AuthorArticleService extends BaseArticleService
                 "doi" => $article->doi,
                 "status" => $article->status?->name,
                 "citations_count" => $article->citations_count ?? 0,
-                "cited_by_count" => $article->cited_by_count ?? 0,
+                "cited_by_count" => 0,
             ]);
     }
 

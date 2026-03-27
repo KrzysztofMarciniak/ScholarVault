@@ -15,22 +15,16 @@ class AnyArticleService extends BaseArticleService
     public function listArticles(array $filters = []): array
     {
         $query = Article::query()->where("status_id", ArticleStatus::PUBLISHED->value)
-            ->with(["status:id,name", "authors:id,name,orcid", "citations", "citedBy"]);
-
-        // apply filters and sorting via trait
+            ->with(["status:id,name", "authors:id,name,orcid", "citations"]);
         $query = $this->applyArticleFilters($query, $filters);
         $query = $this->applySort($query, $filters["sort"] ?? null);
-
-        // pagination
         $perPage = (int)($filters["per_page"] ?? 15);
         $perPage = $perPage <= 0 ? 15 : min($perPage, 25);
         $page = (int)($filters["page"] ?? 1);
         $page = max($page, 1);
-
         $paginator = $this->paginateQuery($query, $perPage, $page);
-
         $data = $paginator->getCollection()
-            ->map(fn($article) => $this->transformArticleList($article))
+            ->map(fn($article) => $this->transformArticlePublic($article))
             ->all();
 
         return [
@@ -50,14 +44,13 @@ class AnyArticleService extends BaseArticleService
         $article = Article::with([
             "authors:id,name,orcid",
             "status:id,name",
-            "citations:id,title,doi",
-            "citedBy:id,title,doi",
+            "citations",
         ])->find($id);
 
         if (!$article) {
             return null;
         }
 
-        return $this->transformArticleDetail($article);
+        return $this->transformArticlePublic($article);
     }
 }

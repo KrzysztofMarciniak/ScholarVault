@@ -1,7 +1,8 @@
-// showArticle.js
+// reviewer_article_view.js
 import { getToken } from "./get_token.js";
 import { createContentContainer } from "./layout.js";
 
+import { renderCitations } from "./crud_citations.js";
 let __showArticleStylesInjected = false;
 
 function ensureShowArticleStyles() {
@@ -280,6 +281,37 @@ function ensureShowArticleStyles() {
       color: #dc2626;
       font-weight: 500;
     }
+
+    .article-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .article-action-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--primary-color-b);
+      border-radius: 0.375rem;
+      background: var(--primary-color-a);
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .article-action-btn:hover {
+      background: var(--primary-color-b);
+      border-color: var(--primary-color-a);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .article-action-btn:active {
+      transform: translateY(0);
+    }
   `;
 
   document.head.appendChild(style);
@@ -323,21 +355,6 @@ function renderAuthors(authors) {
   `;
 }
 
-/** Render citations list */
-function renderCitations(list) {
-  if (!list?.length) return `<div class="article-empty-state">None.</div>`;
-
-  return `
-    <ul class="article-citations-list">
-      ${list.map(c => `
-        <li class="article-citation-item">
-          ${c.title}
-          ${c.doi ? `<span class="article-citation-doi">(DOI: ${c.doi})</span>` : ""}
-        </li>
-      `).join("")}
-    </ul>
-  `;
-}
 
 /** Render existing comments */
 function renderComments(comments) {
@@ -457,7 +474,6 @@ export async function showArticle(id) {
   content.innerHTML += `<p style="color: var(--text-color-a); text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Loading article...</p>`;
 
   try {
-
     const article = await fetchArticle(id);
 
     // render everything
@@ -466,6 +482,13 @@ export async function showArticle(id) {
         <h2 class="article-title">${article.title}</h2>
         <div class="article-status-row">
           Status: <span class="article-status">${article.status ?? ""}</span>
+        </div>
+
+        <!-- Citations Button -->
+        <div class="article-actions" style="margin-top: 0.75rem;">
+          <button id="citationsBtn" type="button" class="article-action-btn">
+            <i class="fa-solid fa-book"></i> Citations
+          </button>
         </div>
       </section>
 
@@ -480,16 +503,6 @@ export async function showArticle(id) {
       </section>
 
       <section class="article-section">
-        <h3 class="article-section-title">Citations</h3>
-        ${renderCitations(article.citations)}
-      </section>
-
-      <section class="article-section">
-        <h3 class="article-section-title">Cited By</h3>
-        ${renderCitations(article.cited_by)}
-      </section>
-
-      <section class="article-section">
         <h3 class="article-section-title">Reviewer Comments</h3>
         <div id="commentsContainer">
           ${renderComments(article.comments)}
@@ -497,20 +510,26 @@ export async function showArticle(id) {
       </section>
     `;
 
+    // Comments form
     const commentsContainer = content.querySelector("#commentsContainer");
     renderCommentForm(content, id, commentsContainer);
 
-    // pass the current status to the decision panel
+    // Decision panel
     renderDecisionPanel(content, id, article.status);
 
-  } catch (err) {
+    // Citations button logic
+    const citationsBtn = content.querySelector("#citationsBtn");
 
+    citationsBtn?.addEventListener("click", async () => {
+      await renderCitations(id);
+    });
+
+  } catch (err) {
     content.innerHTML = `
       <div class="article-error">
         <i class="fa-solid fa-exclamation-circle"></i> Failed to load article: ${err.message}
       </div>
     `;
-
     console.error("Reviewer article view error:", err);
   }
 }
@@ -536,7 +555,6 @@ async function submitDecision(articleId, decision) {
   return payload;
 }
 
-/** Render decision buttons for reviewer */
 function renderDecisionPanel(container, articleId, currentStatus) {
   const panel = document.createElement("div");
   panel.className = "decision-panel";
@@ -551,14 +569,20 @@ function renderDecisionPanel(container, articleId, currentStatus) {
   rejectBtn.className = "decision-reject-btn";
   rejectBtn.type = "button";
 
-  // find status element to update after change
   const statusEl = container.querySelector(".article-status");
 
-  // Disable buttons if article is already decided
-  const readonly = ["accepted", "rejected", "rejected_by_admin"].includes((currentStatus ?? "").toString().toLowerCase());
+  // Disable buttons if article is already decided or published
+  const readonly = ["accepted", "rejected", "rejected_by_admin", "published"].includes(
+    (currentStatus ?? "").toString().toLowerCase()
+  );
   if (readonly) {
     acceptBtn.disabled = true;
     rejectBtn.disabled = true;
+    // Optionally hide buttons completely if published
+    if ((currentStatus ?? "").toString().toLowerCase() === "published") {
+      acceptBtn.style.display = "none";
+      rejectBtn.style.display = "none";
+    }
   } else {
     acceptBtn.addEventListener("click", async () => {
       acceptBtn.disabled = true;
@@ -566,8 +590,6 @@ function renderDecisionPanel(container, articleId, currentStatus) {
       try {
         await submitDecision(articleId, "accepted");
         if (statusEl) statusEl.textContent = "accepted";
-        acceptBtn.disabled = true;
-        rejectBtn.disabled = true;
       } catch (err) {
         console.error("Failed to submit decision:", err);
         alert(err.message || "Failed to submit decision");
@@ -582,8 +604,6 @@ function renderDecisionPanel(container, articleId, currentStatus) {
       try {
         await submitDecision(articleId, "rejected");
         if (statusEl) statusEl.textContent = "rejected";
-        acceptBtn.disabled = true;
-        rejectBtn.disabled = true;
       } catch (err) {
         console.error("Failed to submit decision:", err);
         alert(err.message || "Failed to submit decision");

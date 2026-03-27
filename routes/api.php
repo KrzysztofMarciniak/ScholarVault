@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\v1AdminArticleController;
 use App\Http\Controllers\v1ArticleController;
 use App\Http\Controllers\v1AuthorArticleController;
+use App\Http\Controllers\v1CitationController;
 use App\Http\Controllers\v1LoginController;
 use App\Http\Controllers\v1NotificationController;
 use App\Http\Controllers\v1RegisterController;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 
 // --- /api/v1/ ---
 Route::prefix("v1")->group(function (): void {
+    Route::get("/login", fn() => view("spa"))->name("login");
     // -----------------------
     // Notifications (auth)
     // -----------------------
@@ -120,6 +122,34 @@ Route::prefix("v1")->group(function (): void {
             ->name("v1.articles.index");                  // GET /api/v1/articles/
         Route::get("/{id}", [v1ArticleController::class, "show"])
             ->name("v1.articles.show");                   // GET /api/v1/articles/{id}
+    });
+
+    // -----------------------
+    // Citations resource
+    // -----------------------
+    Route::prefix("citations")->group(function (): void {
+        // List all citations (public)
+        Route::get("/", [v1CitationController::class, "index"])
+            ->name("v1.citations.index");               // GET /api/v1/citations/
+
+        // Show single citation (public)
+        Route::get("/{id}", [v1CitationController::class, "show"])
+            ->name("v1.citations.show");                // GET /api/v1/citations/{id}
+
+        // Create citation
+        Route::post("/", [v1CitationController::class, "store"])
+            ->middleware("auth:sanctum")
+            ->name("v1.citations.store");               // POST /api/v1/citations/
+
+        // Update citation
+        Route::patch("/{id}", [v1CitationController::class, "update"])
+            ->middleware("auth:sanctum")
+            ->name("v1.citations.update");              // PATCH /api/v1/citations/{id}
+
+        // Delete citation
+        Route::delete("/{id}", [v1CitationController::class, "destroy"])
+            ->middleware("auth:sanctum")
+            ->name("v1.citations.destroy");             // DELETE /api/v1/citations/{id}
     });
 
     // -----------------------

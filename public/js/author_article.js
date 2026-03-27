@@ -191,6 +191,7 @@ export async function renderAuthorArticle(articleId) {
     console.error(err);
   }
 }
+
 async function submitRevision(articleId, fileInput, notesInput) {
   const token = getToken();
   if (!token) throw new Error("Not authenticated");
@@ -226,6 +227,7 @@ function renderRevisionSection(container, articleId) {
     <textarea id="revisionNotes" rows="3" placeholder="Optional notes..." class="w-full p-2 border rounded mb-2"></textarea>
     <div class="flex gap-2 items-center">
       <button id="submitRevisionBtn" class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">Submit Revision</button>
+      <button id="citationsBtn" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Manage Citations</button>
       <small id="revisionError" class="text-red-600 hidden"></small>
       <small id="revisionSuccess" class="text-green-600 hidden"></small>
     </div>
@@ -236,8 +238,14 @@ function renderRevisionSection(container, articleId) {
   const fileInput = revisionContainer.querySelector("#revisionFile");
   const notesInput = revisionContainer.querySelector("#revisionNotes");
   const submitBtn = revisionContainer.querySelector("#submitRevisionBtn");
+  const citationsBtn = revisionContainer.querySelector("#citationsBtn");
   const errorEl = revisionContainer.querySelector("#revisionError");
   const successEl = revisionContainer.querySelector("#revisionSuccess");
+
+  citationsBtn.addEventListener("click", async () => {
+    const { renderCitations } = await import("./crud_citations.js");
+    await renderCitations(articleId);
+  });
 
   submitBtn.addEventListener("click", async () => {
     errorEl.classList.add("hidden");

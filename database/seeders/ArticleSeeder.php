@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Enums\ArticleStatus;
 use App\Models\Article;
+use App\Models\Citation;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
@@ -55,14 +56,25 @@ class ArticleSeeder extends Seeder
             // Create article
             $article = Article::create($data);
 
-            // Attach random authors (1-3 authors per article)
-            $authorIds = $authors->random(rand(1, 3))->pluck("id")->toArray();
-            $article->authors()->attach($authorIds, ["is_primary" => true]);
+            // Attach 1-3 random authors, mark first as primary
+            $selectedAuthors = $authors->random(rand(1, 3));
+            $first = true;
 
-            // Optional: add a citation to previous article (if exists)
-            if ($i > 0) {
-                $article->citations()->attach(Article::find($i)->id);
+            foreach ($selectedAuthors as $author) {
+                $article->authors()->attach($author->id, [
+                    "is_primary" => $first,
+                ]);
+                $first = false;
             }
+
+            Citation::create([
+                "title" => "Sample External Citation for {$article->title}",
+                "authors" => "Doe, John",
+                "doi" => "10.1000/sample.{$i}",
+                "url" => "https://example.com/citation/{$i}",
+                "availability_status" => "external_link",
+                "article_id" => $article->id,
+            ]);
         }
     }
 }

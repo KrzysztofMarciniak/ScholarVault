@@ -20,7 +20,7 @@ class ReviewerArticleService extends BaseArticleService
     public function assignedArticles(User $user, int $perPage = 10): LengthAwarePaginator
     {
         $articles = Article::whereHas("reviewers", fn($q) => $q->where("users.id", $user->id))
-            ->with(["authors", "status", "citations", "citedBy", "files"])
+            ->with(["authors", "status", "citations", "files"])
             ->orderByDesc("created_at")
             ->paginate($perPage);
 
@@ -38,7 +38,6 @@ class ReviewerArticleService extends BaseArticleService
             "authors",
             "status",
             "citations",
-            "citedBy",
             "comments.user",
             "files",
         ])->whereHas("reviewers", fn($q) => $q->where("users.id", $user->id))
@@ -100,7 +99,7 @@ class ReviewerArticleService extends BaseArticleService
         $article->status_id = $status->value;
         $article->save();
 
-        return $article->load(["authors", "status", "citations", "citedBy", "comments.user"]);
+        return $article->load(["authors", "status", "citations", "comments.user"]);
     }
 
     /**
@@ -133,11 +132,6 @@ class ReviewerArticleService extends BaseArticleService
                 "is_primary" => (bool)$author->pivot->is_primary,
             ])->values(),
             "citations" => $article->citations->map(fn($c) => [
-                "id" => $c->id,
-                "title" => $c->title,
-                "doi" => $c->doi,
-            ])->values(),
-            "cited_by" => $article->citedBy->map(fn($c) => [
                 "id" => $c->id,
                 "title" => $c->title,
                 "doi" => $c->doi,

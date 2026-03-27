@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Article extends Model
@@ -31,55 +32,47 @@ class Article extends Model
         return $this->belongsTo(ArticleStatus::class, "status_id");
     }
 
-    public function reviewers()
+    public function reviewers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, "article_reviewer")
             ->withTimestamps();
     }
 
-    public function authors()
+    public function authors(): BelongsToMany
     {
         return $this->belongsToMany(User::class, "article_user");
     }
 
-    public function externalCitations(): BelongsToMany
+    public function citations(): HasMany
     {
-        return $this->belongsToMany(Citation::class, "article_citation_pivot")
-            ->withTimestamps();
+        return $this->hasMany(Citation::class, "article_id");
     }
 
-    // Articles this article cites
-    public function citations()
+    public function comments(): HasMany
     {
-        return $this->belongsToMany(
-            self::class,
-            "article_citation",
-            "article_id",       // this article
-            "cited_article_id", // the referenced article
-        )->withTimestamps();
+        return $this->hasMany(ArticleComment::class)->latest();
     }
 
-    // Articles that cite this article
-    public function citedBy()
+    public function files(): HasMany
     {
-        return $this->belongsToMany(
-            self::class,
-            "article_citation",
-            "cited_article_id", // this article
-            "article_id",       // citing article
-        )->withTimestamps();
+        return $this->hasMany(ArticleFile::class)->orderByDesc("version_number");
+    }
+
+    public function latestFile(): ?ArticleFile
+    {
+        return $this->files()->first();
+    }
+
+    public function latestFileOfMany(): HasOne
+    {
+        return $this->hasOne(ArticleFile::class)->latestOfMany("version_number");
     }
 
     public function scopeAuthoredBy($query, int $authorId)
     {
-        return $query->whereHas("authors", function ($q) use ($authorId): void {
-            $q->where("user_id", $authorId);
-        });
+        return $query->whereHas("authors", fn($q) => $q->where("user_id", $authorId));
     }
 
-    /**
-     * Return array shaped for author single-article view.
-     */
     public function toAuthorDetailArray(): array
     {
         return [
@@ -100,8 +93,8 @@ class Article extends Model
                 "id" => $c->id,
                 "title" => $c->title,
                 "doi" => $c->doi,
+                "url" => $c->url,
             ])->values()->all(),
-            // Include uploaded files (revisions)
             "files" => $this->files->map(fn($f) => [
                 "id" => $f->id,
                 "filename" => $f->filename,
@@ -111,30 +104,5 @@ class Article extends Model
                 "created_at" => $f->created_at,
             ])->values()->all(),
         ];
-    }
-
-    public function comments()
-    {
-        return $this->hasMany(ArticleComment::class)
-            ->latest();
-    }
-
-    /**
-     * All uploaded files / revisions for this article.
-     */
-    public function files()
-    {
-        return $this->hasMany(ArticleFile::class)
-            ->orderByDesc("version_number");
-    }
-
-    public function latestFile(): ?ArticleFile
-    {
-        return $this->files()->first();
-    }
-
-    public function latestFileOfMany(): HasOne
-    {
-        return $this->hasOne(ArticleFile::class)->latestOfMany("version_number");
     }
 }

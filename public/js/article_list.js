@@ -215,7 +215,7 @@ export function renderError(container, err) {
 export function renderArticleCard(article) {
   const status = (article.status || "").toLowerCase();
   let statusClass = "article-status-pending";
-
+  
   if (status === "accepted") {
     statusClass = "article-status-accepted";
   } else if (status === "rejected" || status === "rejected_by_admin") {
