@@ -15,86 +15,86 @@ use Illuminate\Http\Request;
 
 class v1ReviewerArticleController extends v1Controller
 {
-public function help(ApiDocs $docs): JsonResponse
-{
-    // List articles assigned to the reviewer
-    $docs->addEndpoint(new EndpointDTO(
-        method: "GET",
-        path: "/api/v1/articles/assigned",
-        description: "List articles assigned to the authenticated reviewer.",
-        roles: ["reviewer"],
-        queryParams: [
-            "per_page" => "integer, optional, default 10"
-        ],
-        responseCode: 200,
-        responseData: "paginated array of articles with basic info"
-    ));
+    public function help(ApiDocs $docs): JsonResponse
+    {
+        // List articles assigned to the reviewer
+        $docs->addEndpoint(new EndpointDTO(
+            method: "GET",
+            path: "/api/v1/articles/assigned",
+            description: "List articles assigned to the authenticated reviewer.",
+            roles: ["reviewer"],
+            queryParams: [
+                "per_page" => "integer, optional, default 10",
+            ],
+            responseCode: 200,
+            responseData: "paginated array of articles with basic info",
+        ));
 
-    // View a single assigned article
-    $docs->addEndpoint(new EndpointDTO(
-        method: "GET",
-        path: "/api/v1/articles/assigned/{id}",
-        description: "View details of a single article assigned to the reviewer.",
-        roles: ["reviewer"],
-        queryParams: [
-            "id" => "integer, article ID"
-        ],
-        responseCode: 200,
-        responseData: "article object including latest file, authors, citations, and comments"
-    ));
+        // View a single assigned article
+        $docs->addEndpoint(new EndpointDTO(
+            method: "GET",
+            path: "/api/v1/articles/assigned/{id}",
+            description: "View details of a single article assigned to the reviewer.",
+            roles: ["reviewer"],
+            queryParams: [
+                "id" => "integer, article ID",
+            ],
+            responseCode: 200,
+            responseData: "article object including latest file, authors, citations, and comments",
+        ));
 
-    // Leave a comment on an assigned article
-    $docs->addEndpoint(new EndpointDTO(
-        method: "POST",
-        path: "/api/v1/articles/assigned/comment/{id}",
-        description: "Add a comment on an assigned article.",
-        roles: ["reviewer"],
-        requestBody: [
-            "comment" => "string, required, max 5000 characters"
-        ],
-        responseCode: 201,
-        responseData: [
-            "id" => "comment ID",
-            "article_id" => "article ID",
-            "user_id" => "comment author ID",
-            "comment" => "comment text",
-            "created_at" => "timestamp"
-        ]
-    ));
+        // Leave a comment on an assigned article
+        $docs->addEndpoint(new EndpointDTO(
+            method: "POST",
+            path: "/api/v1/articles/assigned/comment/{id}",
+            description: "Add a comment on an assigned article.",
+            roles: ["reviewer"],
+            requestBody: [
+                "comment" => "string, required, max 5000 characters",
+            ],
+            responseCode: 201,
+            responseData: [
+                "id" => "comment ID",
+                "article_id" => "article ID",
+                "user_id" => "comment author ID",
+                "comment" => "comment text",
+                "created_at" => "timestamp",
+            ],
+        ));
 
-    // Submit a review for an assigned article
-    $docs->addEndpoint(new EndpointDTO(
-        method: "POST",
-        path: "/api/v1/articles/assigned/{id}/review",
-        description: "Submit a review for an assigned article.",
-        roles: ["reviewer"],
-        requestBody: [
-            "recommendation" => "string, required, one of accept, reject, revision_requested",
-            "comments" => "string, required, max 5000 characters"
-        ],
-        responseCode: 200,
-        responseData: "review object including reviewer info"
-    ));
+        // Submit a review for an assigned article
+        $docs->addEndpoint(new EndpointDTO(
+            method: "POST",
+            path: "/api/v1/articles/assigned/{id}/review",
+            description: "Submit a review for an assigned article.",
+            roles: ["reviewer"],
+            requestBody: [
+                "recommendation" => "string, required, one of accept, reject, revision_requested",
+                "comments" => "string, required, max 5000 characters",
+            ],
+            responseCode: 200,
+            responseData: "review object including reviewer info",
+        ));
 
-    // Make a decision on an assigned article
-    $docs->addEndpoint(new EndpointDTO(
-        method: "POST",
-        path: "/api/v1/articles/assigned/decide/{id}",
-        description: "Submit a final decision (accept/reject) on an assigned article.",
-        roles: ["reviewer"],
-        requestBody: [
-            "decision" => "string, required, either accepted or rejected"
-        ],
-        responseCode: 200,
-        responseData: [
-            "status" => "success",
-            "article_id" => "ID of the article",
-            "new_status" => "new status ID"
-        ]
-    ));
+        // Make a decision on an assigned article
+        $docs->addEndpoint(new EndpointDTO(
+            method: "POST",
+            path: "/api/v1/articles/assigned/decide/{id}",
+            description: "Submit a final decision (accept/reject) on an assigned article.",
+            roles: ["reviewer"],
+            requestBody: [
+                "decision" => "string, required, either accepted or rejected",
+            ],
+            responseCode: 200,
+            responseData: [
+                "status" => "success",
+                "article_id" => "ID of the article",
+                "new_status" => "new status ID",
+            ],
+        ));
 
-    return response()->json($docs->getEndpoints());
-}
+        return response()->json($docs->getEndpoints());
+    }
 
     public function assignedArticles(Request $request, ReviewerArticleService $service): JsonResponse
     {
@@ -215,6 +215,4 @@ public function help(ApiDocs $docs): JsonResponse
             "new_status" => $article->status_id,
         ]);
     }
-
-
 }

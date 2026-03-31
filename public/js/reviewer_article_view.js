@@ -93,6 +93,37 @@ function ensureShowArticleStyles() {
       line-height: 1.4;
     }
 
+    .article-keywords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .article-keyword {
+      display: inline-block;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.25rem;
+      background: var(--primary-color-b);
+      color: var(--text-color-a);
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .article-doi {
+      font-size: 0.9rem;
+      color: var(--text-color-a);
+      word-break: break-all;
+    }
+
+    .article-file {
+      font-size: 0.9rem;
+      color: var(--text-color-a);
+    }
+
+    .article-file i {
+      margin-right: 0.5rem;
+    }
+
     .article-citations-list {
       list-style: disc;
       padding-left: 1.25rem;
@@ -501,6 +532,31 @@ export async function showArticle(id) {
         <h3 class="article-section-title">Authors</h3>
         ${renderAuthors(article.authors)}
       </section>
+
+      ${article.keywords?.length ? `
+      <section class="article-section">
+        <h3 class="article-section-title">Keywords</h3>
+        <div class="article-keywords">${article.keywords.map(k => `<span class="article-keyword">${k}</span>`).join("")}</div>
+      </section>
+      ` : ""}
+
+      ${article.doi ? `
+      <section class="article-section">
+        <h3 class="article-section-title">DOI</h3>
+        <p class="article-doi">${article.doi}</p>
+      </section>
+      ` : ""}
+
+${article.filename ? `
+<section class="article-section">
+  <h3 class="article-section-title">File</h3>
+  <p class="article-file">
+    <a href="/path/to/file/${article.filename}" download>
+      <i class="fa-solid fa-${article.file_type === 'pdf' ? 'file-pdf' : 'file'}"></i> ${article.filename}
+    </a>
+  </p>
+</section>
+` : ""}
 
       <section class="article-section">
         <h3 class="article-section-title">Reviewer Comments</h3>

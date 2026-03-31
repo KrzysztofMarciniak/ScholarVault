@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Services\ApiDocsService\ApiDocs;
-use App\Services\ApiDocsService\EndpointDTO;
 use App\Enums\ArticleStatus;
 use App\Events\ReviewersAssigned;
+use App\Services\ApiDocsService\ApiDocs;
+use App\Services\ApiDocsService\EndpointDTO;
 use App\Services\Article\AdminArticleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,70 +17,70 @@ use Throwable;
 
 class v1AdminArticleController extends v1Controller
 {
-public function help(ApiDocs $docs): JsonResponse
-{
-    // List all articles (admin)
-    $docs->addEndpoint(new EndpointDTO(
-        method: "GET",
-        path: "/api/v1/articles/admin/",
-        description: "List all articles with optional filtering and pagination.",
-        roles: ["administrator"],
-        queryParams: [
-            "per_page" => "integer, optional, default 5",
-            "status" => "integer, optional, filter by status ID",
-            "search" => "string, optional, search by title or abstract",
-        ],
-        responseCode: 200,
-        responseData: "paginated array of articles including authors, reviewers, citations, status, and latest file info"
-    ));
+    public function help(ApiDocs $docs): JsonResponse
+    {
+        // List all articles (admin)
+        $docs->addEndpoint(new EndpointDTO(
+            method: "GET",
+            path: "/api/v1/articles/admin/",
+            description: "List all articles with optional filtering and pagination.",
+            roles: ["administrator"],
+            queryParams: [
+                "per_page" => "integer, optional, default 5",
+                "status" => "integer, optional, filter by status ID",
+                "search" => "string, optional, search by title or abstract",
+            ],
+            responseCode: 200,
+            responseData: "paginated array of articles including authors, reviewers, citations, status, and latest file info",
+        ));
 
-    // List reviewers (admin)
-    $docs->addEndpoint(new EndpointDTO(
-        method: "GET",
-        path: "/api/v1/articles/admin/reviewers",
-        description: "List all reviewers with optional search and pagination.",
-        roles: ["administrator"],
-        queryParams: [
-            "per_page" => "integer, optional, default 10",
-            "search" => "string, optional, search by name or email"
-        ],
-        responseCode: 200,
-        responseData: "paginated array of reviewers with basic info"
-    ));
+        // List reviewers (admin)
+        $docs->addEndpoint(new EndpointDTO(
+            method: "GET",
+            path: "/api/v1/articles/admin/reviewers",
+            description: "List all reviewers with optional search and pagination.",
+            roles: ["administrator"],
+            queryParams: [
+                "per_page" => "integer, optional, default 10",
+                "search" => "string, optional, search by name or email",
+            ],
+            responseCode: 200,
+            responseData: "paginated array of reviewers with basic info",
+        ));
 
-    // Assign reviewers to an article (admin)
-    $docs->addEndpoint(new EndpointDTO(
-        method: "PATCH",
-        path: "/api/v1/articles/admin/reviewers/{id}",
-        description: "Assign reviewers to a specific article. Updates article status to 'under review'.",
-        roles: ["administrator"],
-        requestBody: [
-            "reviewers" => "array of integer user IDs, required",
-        ],
-        responseCode: 200,
-        responseData: "article object including assigned reviewers and latest file info"
-    ));
+        // Assign reviewers to an article (admin)
+        $docs->addEndpoint(new EndpointDTO(
+            method: "PATCH",
+            path: "/api/v1/articles/admin/reviewers/{id}",
+            description: "Assign reviewers to a specific article. Updates article status to 'under review'.",
+            roles: ["administrator"],
+            requestBody: [
+                "reviewers" => "array of integer user IDs, required",
+            ],
+            responseCode: 200,
+            responseData: "article object including assigned reviewers and latest file info",
+        ));
 
-    // Make decision on an article (admin)
-    $docs->addEndpoint(new EndpointDTO(
-        method: "PATCH",
-        path: "/api/v1/articles/admin/decide/{id}",
-        description: "Admin decision endpoint to publish or reject an article.",
-        roles: ["administrator"],
-        requestBody: [
-            "status" => 'string, required, either "published" or "rejected_by_admin"'
-        ],
-        responseCode: 200,
-        responseData: [
-            "status" => "success or error",
-            "article_id" => "ID of the article",
-            "new_status" => "new status ID",
-            "message" => "optional error message if failed"
-        ]
-    ));
+        // Make decision on an article (admin)
+        $docs->addEndpoint(new EndpointDTO(
+            method: "PATCH",
+            path: "/api/v1/articles/admin/decide/{id}",
+            description: "Admin decision endpoint to publish or reject an article.",
+            roles: ["administrator"],
+            requestBody: [
+                "status" => 'string, required, either "published" or "rejected_by_admin"',
+            ],
+            responseCode: 200,
+            responseData: [
+                "status" => "success or error",
+                "article_id" => "ID of the article",
+                "new_status" => "new status ID",
+                "message" => "optional error message if failed",
+            ],
+        ));
 
-    return response()->json($docs->getEndpoints());
-}
+        return response()->json($docs->getEndpoints());
+    }
 
     public function listReviewers(Request $request, AdminArticleService $service): JsonResponse
     {

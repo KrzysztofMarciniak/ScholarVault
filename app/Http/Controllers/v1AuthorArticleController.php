@@ -4,116 +4,115 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Services\ApiDocsService\ApiDocs;
+use App\Services\ApiDocsService\EndpointDTO;
 use App\Services\Article\AuthorArticleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-use App\Services\ApiDocsService\ApiDocs;
-use App\Services\ApiDocsService\EndpointDTO;
-
 class v1AuthorArticleController extends v1Controller
 {
-public function help(ApiDocs $docs): JsonResponse
-{
-    // Submit a new article
-    $docs->addEndpoint(new EndpointDTO(
-        method: "POST",
-        path: "/api/v1/articles/submit",
-        description: "Submit a new article (author only). Requires title, abstract, file, optional keywords.",
-        roles: ["author"],
-        requestBody: [
-            "title" => "string, required",
-            "abstract" => "string, required",
-            "file" => "pdf or tex, required",
-            "keywords" => "array of strings, optional",
-        ],
-        responseCode: 201,
-        responseData: [
-            "status" => "success",
-            "data" => "article object"
-        ]
-    ));
+    public function help(ApiDocs $docs): JsonResponse
+    {
+        // Submit a new article
+        $docs->addEndpoint(new EndpointDTO(
+            method: "POST",
+            path: "/api/v1/articles/submit",
+            description: "Submit a new article (author only). Requires title, abstract, file, optional keywords.",
+            roles: ["author"],
+            requestBody: [
+                "title" => "string, required",
+                "abstract" => "string, required",
+                "file" => "pdf or tex, required",
+                "keywords" => "array of strings, optional",
+            ],
+            responseCode: 201,
+            responseData: [
+                "status" => "success",
+                "data" => "article object",
+            ],
+        ));
 
-    // List the author's articles
-    $docs->addEndpoint(new EndpointDTO(
-        method: "GET",
-        path: "/api/v1/articles/my/list",
-        description: "Retrieve paginated list of the authenticated author's own articles.",
-        roles: ["author"],
-        queryParams: [
-            "per_page" => "integer, optional, default 10"
-        ],
-        responseCode: 200,
-        responseData: [
-            "status" => "success",
-            "data" => "array of articles",
-            "pagination" => "pagination info"
-        ]
-    ));
+        // List the author's articles
+        $docs->addEndpoint(new EndpointDTO(
+            method: "GET",
+            path: "/api/v1/articles/my/list",
+            description: "Retrieve paginated list of the authenticated author's own articles.",
+            roles: ["author"],
+            queryParams: [
+                "per_page" => "integer, optional, default 10",
+            ],
+            responseCode: 200,
+            responseData: [
+                "status" => "success",
+                "data" => "array of articles",
+                "pagination" => "pagination info",
+            ],
+        ));
 
-    // View a single article owned by the author
-    $docs->addEndpoint(new EndpointDTO(
-        method: "GET",
-        path: "/api/v1/articles/my/{id}",
-        description: "View a single article authored by the authenticated user.",
-        roles: ["author"],
-        queryParams: [
-            "id" => "integer, ID of the article"
-        ],
-        responseCode: 200,
-        responseData: "article object"
-    ));
+        // View a single article owned by the author
+        $docs->addEndpoint(new EndpointDTO(
+            method: "GET",
+            path: "/api/v1/articles/my/{id}",
+            description: "View a single article authored by the authenticated user.",
+            roles: ["author"],
+            queryParams: [
+                "id" => "integer, ID of the article",
+            ],
+            responseCode: 200,
+            responseData: "article object",
+        ));
 
-    // List comments on author's article
-    $docs->addEndpoint(new EndpointDTO(
-        method: "GET",
-        path: "/api/v1/articles/my/comments/{id}",
-        description: "List comments on an article owned by the authenticated author.",
-        roles: ["author"],
-        queryParams: [
-            "id" => "integer, article ID"
-        ],
-        responseCode: 200,
-        responseData: "array of comment objects"
-    ));
+        // List comments on author's article
+        $docs->addEndpoint(new EndpointDTO(
+            method: "GET",
+            path: "/api/v1/articles/my/comments/{id}",
+            description: "List comments on an article owned by the authenticated author.",
+            roles: ["author"],
+            queryParams: [
+                "id" => "integer, article ID",
+            ],
+            responseCode: 200,
+            responseData: "array of comment objects",
+        ));
 
-    // Add comment to author's article
-    $docs->addEndpoint(new EndpointDTO(
-        method: "POST",
-        path: "/api/v1/articles/my/comments/{id}",
-        description: "Add a comment to an article owned by the authenticated author.",
-        roles: ["author"],
-        requestBody: [
-            "comment" => "string, required, max 5000 characters"
-        ],
-        responseCode: 201,
-        responseData: [
-            "id" => "comment ID",
-            "user" => "comment author name",
-            "comment" => "comment text",
-            "created_at" => "timestamp"
-        ]
-    ));
+        // Add comment to author's article
+        $docs->addEndpoint(new EndpointDTO(
+            method: "POST",
+            path: "/api/v1/articles/my/comments/{id}",
+            description: "Add a comment to an article owned by the authenticated author.",
+            roles: ["author"],
+            requestBody: [
+                "comment" => "string, required, max 5000 characters",
+            ],
+            responseCode: 201,
+            responseData: [
+                "id" => "comment ID",
+                "user" => "comment author name",
+                "comment" => "comment text",
+                "created_at" => "timestamp",
+            ],
+        ));
 
-    // Submit a revision for author's article
-    $docs->addEndpoint(new EndpointDTO(
-        method: "POST",
-        path: "/api/v1/articles/my/revision/{id}",
-        description: "Submit a revision file for an article authored by the authenticated user.",
-        roles: ["author"],
-        requestBody: [
-            "file" => "pdf or tex, required",
-            "notes" => "string, optional"
-        ],
-        responseCode: 200,
-        responseData: [
-            "status" => "success",
-            "data" => "revision object"
-        ]
-    ));
+        // Submit a revision for author's article
+        $docs->addEndpoint(new EndpointDTO(
+            method: "POST",
+            path: "/api/v1/articles/my/revision/{id}",
+            description: "Submit a revision file for an article authored by the authenticated user.",
+            roles: ["author"],
+            requestBody: [
+                "file" => "pdf or tex, required",
+                "notes" => "string, optional",
+            ],
+            responseCode: 200,
+            responseData: [
+                "status" => "success",
+                "data" => "revision object",
+            ],
+        ));
 
-    return response()->json($docs->getEndpoints());
-}
+        return response()->json($docs->getEndpoints());
+    }
 
     public function store(
         Request $request,

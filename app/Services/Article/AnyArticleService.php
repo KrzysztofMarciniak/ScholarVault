@@ -9,7 +9,6 @@ use App\Models\Article;
 
 class AnyArticleService extends BaseArticleService
 {
-
     /**
      * Return a paginated list of published articles with optional filters.
      */
