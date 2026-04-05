@@ -31,7 +31,7 @@ function ensureUserMenuStyles() {
     .user-menu-list {
       position: fixed;
       top: 1rem;
-      right: 5rem;
+      right: 10rem;
       z-index: 40;
       width: 12rem;
       display: none;

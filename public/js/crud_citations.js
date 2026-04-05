@@ -353,15 +353,24 @@ export async function renderCitations(articleId = null) {
     const modal = document.createElement("div");
     modal.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
     modal.innerHTML = `
-      <div class="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto p-6">
-        <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Add Citation</h2>
-        <div id="modalFormContainer"></div>
-      </div>
-    `;
+  <div class="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto p-6">
+    <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Add Citation</h2>
+    <div id="modalFormContainer"></div>
+    <button id="exitBtn" class="absolute top-2 right-2 p-2 bg-red-400 hover:bg-red-500 text-white rounded-full transition">
+      <i class="fa-solid fa-times"></i>
+    </button>
+  </div>
+`;
     document.body.appendChild(modal);
 
-      const formContainer = modal.querySelector("#modalFormContainer");
-      renderCitationForm(formContainer, null, currentArticleId);
+    const formContainer = modal.querySelector("#modalFormContainer");
+    renderCitationForm(formContainer, null, currentArticleId);
+
+    // Exit button
+    const exitBtn = modal.querySelector("#exitBtn");
+    exitBtn.addEventListener("click", () => {
+      modal.remove();
+    });
 
     const onUpdated = (ev) => {
       if (ev?.detail?.articleId && currentArticleId && Number(ev.detail.articleId) !== Number(currentArticleId)) return;
@@ -377,15 +386,24 @@ export async function renderCitations(articleId = null) {
     const modal = document.createElement("div");
     modal.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
     modal.innerHTML = `
-      <div class="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto p-6">
-        <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Edit Citation</h2>
-        <div id="modalFormContainer"></div>
-      </div>
-    `;
+  <div class="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto p-6">
+    <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Edit Citation</h2>
+    <div id="modalFormContainer"></div>
+    <button id="exitBtn" class="absolute top-2 right-2 p-2 bg-red-400 hover:bg-red-500 text-white rounded-full transition">
+      <i class="fa-solid fa-times"></i>
+    </button>
+  </div>
+`;
     document.body.appendChild(modal);
 
     const formContainer = modal.querySelector("#modalFormContainer");
     renderCitationForm(formContainer, citation);
+
+    // Exit button
+    const exitBtn = modal.querySelector("#exitBtn");
+    exitBtn.addEventListener("click", () => {
+      modal.remove();
+    });
 
     const onUpdated = (ev) => {
       if (ev?.detail?.articleId && currentArticleId && Number(ev.detail.articleId) !== Number(currentArticleId)) return;
